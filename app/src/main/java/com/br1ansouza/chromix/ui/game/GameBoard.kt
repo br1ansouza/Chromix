@@ -112,8 +112,12 @@ fun GameBoard(
         // Dispara a animação de voo quando um movimento é aplicado.
         LaunchedEffect(state.lastMove) {
             val record = state.lastMove ?: return@LaunchedEffect
-            val fromPos = tubePositions[record.move.fromTubeId] ?: return@LaunchedEffect
-            val toPos = tubePositions[record.move.toTubeId] ?: return@LaunchedEffect
+            // Posições em coordenadas de root; a origem do tabuleiro é subtraída
+            // só aqui, quando ambas já estão estabilizadas pelo layout.
+            val fromPos = tubePositions[record.move.fromTubeId]?.minus(boardOrigin)
+                ?: return@LaunchedEffect
+            val toPos = tubePositions[record.move.toTubeId]?.minus(boardOrigin)
+                ?: return@LaunchedEffect
             val destTube = state.tubes.first { it.id == record.move.toTubeId }
             val landedIndex = destTube.balls.size - 1
 
@@ -157,9 +161,7 @@ fun GameBoard(
                                 ?.hiddenIndex,
                             shakeSeq = shakeTrigger?.takeIf { it.first == tube.id }?.second,
                             onTap = { onTubeTap(tube.id) },
-                            onPositioned = { pos ->
-                                tubePositions[tube.id] = pos - boardOrigin
-                            },
+                            onPositioned = { pos -> tubePositions[tube.id] = pos },
                         )
                     }
                 }
