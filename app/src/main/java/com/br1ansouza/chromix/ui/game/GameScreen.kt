@@ -1,5 +1,6 @@
 package com.br1ansouza.chromix.ui.game
 
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -45,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -52,7 +55,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import com.br1ansouza.chromix.R
 import com.br1ansouza.chromix.domain.GameState
 import com.br1ansouza.chromix.ui.haptics.GameHaptics
 import com.br1ansouza.chromix.ui.sound.GameSounds
@@ -317,18 +326,46 @@ private fun WinOverlay(
                     color = Color.White.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 4.dp),
                 )
-                Button(
-                    onClick = onNextLevel,
-                    shape = RoundedCornerShape(24.dp),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 24.dp),
                 ) {
-                    Text(
-                        text = "Próximo nível",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(vertical = 4.dp),
+                    Button(
+                        onClick = onNextLevel,
+                        shape = RoundedCornerShape(24.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "Próximo nível",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
+                    // Chimarrão animado espiando na diagonal do canto do botão.
+                    val gifContext = LocalContext.current
+                    val gifLoader = remember {
+                        ImageLoader.Builder(gifContext)
+                            .components {
+                                if (Build.VERSION.SDK_INT >= 28) {
+                                    add(ImageDecoderDecoder.Factory())
+                                } else {
+                                    add(GifDecoder.Factory())
+                                }
+                            }
+                            .build()
+                    }
+                    AsyncImage(
+                        model = "android.resource://${gifContext.packageName}/${R.raw.mate}",
+                        imageLoader = gifLoader,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 10.dp, y = 16.dp)
+                            .size(width = 42.dp, height = 64.dp)
+                            .rotate(14f)
+                            .zIndex(1f),
                     )
                 }
                 TextButton(
