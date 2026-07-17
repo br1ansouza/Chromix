@@ -223,10 +223,26 @@ private fun WinOverlay(
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Comemoração na moral gaúcha, estável por nível.
+                val exclamations = remember {
+                    listOf(
+                        "Bah, tri massa!",
+                        "Tchê, mandou bem!",
+                        "Mas que capaz!",
+                        "Baita capricho!",
+                        "Tri bem!",
+                    )
+                }
+                Text(
+                    text = exclamations[levelNumber % exclamations.size],
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
                 Text(
                     text = "Nível $levelNumber concluído",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp),
                 )
                 Text(
                     text = "$moveCount movimentos",
