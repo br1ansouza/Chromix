@@ -20,11 +20,12 @@ Jogo Android nativo de puzzle "Ball Sort": mover bolinhas coloridas entre frasco
 - **Mecânica**: mover bolinha do topo de um frasco para outro apenas se o destino estiver vazio ou tiver bolinha do topo da mesma cor, e não estiver cheio. Vitória quando todo frasco está vazio ou cheio de uma cor só.
 - **Fases infinitas**: geração procedural reversa (embaralhar a partir do estado resolvido com movimentos válidos) — solucionável por construção. Determinística: `Random(seed = levelNumber)`.
 - **Curva de dificuldade**: `colorCount = min(4 + levelNumber/3, 12)`; `emptyTubes = 2` (< nível 15) senão `1`; capacidade 4, podendo variar 4–6 em níveis altos; `shuffleMoves = 40 + levelNumber * 3` (teto 300). Evitar fases triviais.
-- **Telas**: apenas duas — jogo (abre direto no nível em progresso) e seleção de níveis (grid sob demanda, progressão linear). Sem tela de configurações: toggle de vibração no HUD.
+- **Telas**: três — inicial (logo + Iniciar), jogo e seleção de níveis (grid sob demanda, progressão linear). Sem tela de configurações: toggles de som e vibração no HUD.
 - **UX**: animação de voo em arco (~200–280ms, FastOutSlowInEasing), shake em movimento inválido, pulso em tubo completo, overlay de vitória com avanço automático, transições ~200ms. Geração de fase < 50ms, sem loading.
 - **Haptics**: válido 10–15ms, inválido 30ms, tubo completo 40ms, vitória waveform duplo. Respeitar toggle salvo.
-- **Persistência**: DataStore Preferences — `currentLevel`, `bestLevelReached`, `vibrationEnabled`.
-- **Visual**: dark theme fixo (fundo preto), cores vibrantes; padrão/textura por cor para acessibilidade (daltonismo).
+- **Som**: efeitos curtos via SoundPool (click seleção WAV, chime vitória mp3), toggle próprio. Sem música.
+- **Persistência**: DataStore Preferences — `currentLevel`, `bestLevelReached`, `vibrationEnabled`, `soundEnabled`.
+- **Visual**: dark theme fixo (fundo `#121216`), paleta RS "pôr-do-sol no pampa" (12 cores, ver `BallPalette.kt`); marcador geométrico por cor para acessibilidade (daltonismo). Acentos: primary `#2FB8AC`, secondary `#F6B149`. Detalhes RS: listras da bandeira (home e card de vitória), exclamações gaúchas na vitória.
 
 ## Ambiente local (WSL)
 
@@ -32,7 +33,9 @@ Jogo Android nativo de puzzle "Ball Sort": mover bolinhas coloridas entre frasco
 - Java 21 (`/usr/bin/java`), Gradle via wrapper 8.11.1 (`./gradlew`), sem gradle global.
 - Build: `./gradlew :app:assembleDebug` | Testes: `./gradlew :app:testDebugUnitTest`.
 - `gh` autenticado como `br1ansouza`. Identidade git configurada localmente no repo.
-- Logo original do jogo (1024x1024, bordas transparentes): cache de imagem da sessão; mipmaps já gerados em `app/src/main/res/mipmap-*`.
+- Logo original do jogo (1024x1024, bordas transparentes): cache de imagem da sessão; mipmaps já gerados em `app/src/main/res/mipmap-*`; cópia 512px em `drawable-nodpi/logo_chromix.png`.
+- **Instalar no celular (S21 FE)**: WSL2 não vê USB — usar adb do Windows: `/mnt/c/Users/brian/AppData/Local/Android/Sdk/platform-tools/adb.exe install -r 'C:\Users\brian\Desktop\Chromix.apk'`. Saída do adb.exe tem CRLF (`tr -d '\r'` antes de comparar). APK também é copiado pra área de trabalho do Windows a cada release de teste.
+- ffmpeg estático no scratchpad da sessão (se sumir, baixar de johnvansickle.com) — usado pra converter áudio; SoundPool rejeita mp3 muito curto (erro -1010), converter pra WAV PCM.
 
 ## Status (2026-07-17)
 
@@ -44,8 +47,19 @@ Features concluídas (todas mergeadas na main via PR):
 5. PR #5 `feature/haptics` — GameHaptics + toggle no HUD
 6. PR #6 `feature/persistence` — DataStore (currentLevel, bestLevelReached, vibrationEnabled)
 7. PR #7 `feature/level-select` — LevelsScreen + navigation-compose, progressão linear
+8. PR #8 `feature/readme-docs` — README de build
+9. PR #9 `fix/review-fixes` — coords do voo estáveis; grade não reseta nível atual
+10. PR #10 `fix/flight-animation` — voo derivado na composição (sem frame de teleporte); lift animado
+11. PR #11 `feature/home-screen` — tela inicial (logo, Iniciar), fundo global `#121216`, rota `home`
+12. PR #12/#15 `fix/app-icon`/`fix/icon-fit` — ícone: arte completa na safe zone (70%), fundo escuro neutro
+13. PR #13 `feature/levels-grid` — grade exibe 9999 níveis
+14. PR #14 `fix/reset-transition` — reset com scale+fade
+15. PR #16 `feature/rs-theme` — paleta RS nas bolinhas/tema, listras da bandeira, exclamações gaúchas
+16. PR #17 `feature/sound-effects` — SoundPool + toggle som + card de vitória estilizado
+17. PR #18 `fix/selection-sound` — click em WAV (mp3 48ms não decodificava), vibração na seleção
 
-Pendente: README final com instruções de build/APK.
+App validado no S21 FE do usuário (som, haptics, animações, persistência OK).
+Pendente: nada bloqueante.
 
 **Nota do gerador**: a spec pedia embaralhar com movimentos válidos normais, mas isso mantém tubos monocromáticos (fase trivial). Implementado com movimentos inversos (remove bolinha sobre mesma cor ou do fundo, solta em tubo não cheio) — solucionável por construção; teste reexecuta a solução gravada (fases 1–60).
 
