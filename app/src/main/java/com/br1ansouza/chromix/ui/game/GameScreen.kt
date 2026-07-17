@@ -2,6 +2,8 @@ package com.br1ansouza.chromix.ui.game
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,16 +35,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.br1ansouza.chromix.domain.GameState
 import com.br1ansouza.chromix.ui.haptics.GameHaptics
 import com.br1ansouza.chromix.viewmodel.GameViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun GameScreen(
@@ -77,6 +82,17 @@ fun GameScreen(
         }
     }
 
+    // Reset com respiro: tabuleiro encolhe/some (120ms), regenera, volta (180ms).
+    val scope = rememberCoroutineScope()
+    val boardVisibility = remember { Animatable(1f) }
+    val animatedReset: () -> Unit = {
+        scope.launch {
+            boardVisibility.animateTo(0f, tween(120, easing = FastOutSlowInEasing))
+            viewModel.resetLevel()
+            boardVisibility.animateTo(1f, tween(180, easing = FastOutSlowInEasing))
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -89,7 +105,7 @@ fun GameScreen(
                 canUndo = state.canUndo,
                 vibrationEnabled = state.vibrationEnabled,
                 onUndo = viewModel::undo,
-                onReset = viewModel::resetLevel,
+                onReset = animatedReset,
                 onToggleVibration = viewModel::toggleVibration,
                 onOpenLevels = onOpenLevels,
             )
@@ -107,7 +123,14 @@ fun GameScreen(
                         state = state,
                         shakeTrigger = shakeTrigger,
                         onTubeTap = viewModel::onTubeTap,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp, vertical = 12.dp)
+                            .graphicsLayer {
+                                alpha = boardVisibility.value
+                                val scale = 0.94f + 0.06f * boardVisibility.value
+                                scaleX = scale
+                                scaleY = scale
+                            },
                     )
                 }
             }
