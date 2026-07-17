@@ -35,9 +35,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val canUndo: Boolean = false,
         val lastMove: MoveRecord? = null,
         val vibrationEnabled: Boolean = true,
+        val soundEnabled: Boolean = true,
     )
 
     sealed interface GameEvent {
+        data object TubeSelected : GameEvent
         data object ValidMove : GameEvent
         data class InvalidMove(val tubeId: Int) : GameEvent
         data class TubeCompleted(val tubeId: Int) : GameEvent
@@ -61,6 +63,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.value = newLevelState(saved.currentLevel).copy(
                 bestLevelReached = saved.bestLevelReached,
                 vibrationEnabled = saved.vibrationEnabled,
+                soundEnabled = saved.soundEnabled,
             )
         }
     }
@@ -75,6 +78,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val tube = state.tubes.first { it.id == tubeId }
                 if (!tube.isEmpty) {
                     _uiState.value = state.copy(selectedTubeId = tubeId)
+                    _events.tryEmit(GameEvent.TubeSelected)
                 }
             }
 
@@ -136,6 +140,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { prefs.setVibrationEnabled(enabled) }
     }
 
+    fun toggleSound() {
+        val state = _uiState.value ?: return
+        val enabled = !state.soundEnabled
+        _uiState.value = state.copy(soundEnabled = enabled)
+        viewModelScope.launch { prefs.setSoundEnabled(enabled) }
+    }
+
     fun resetLevel() {
         val state = _uiState.value ?: return
         loadLevel(state.levelNumber)
@@ -152,6 +163,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = newLevelState(levelNumber).copy(
             bestLevelReached = state.bestLevelReached,
             vibrationEnabled = state.vibrationEnabled,
+            soundEnabled = state.soundEnabled,
         )
         viewModelScope.launch { prefs.setCurrentLevel(levelNumber) }
     }

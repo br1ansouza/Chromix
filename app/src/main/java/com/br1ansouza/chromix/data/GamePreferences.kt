@@ -20,6 +20,7 @@ class GamePreferences(private val context: Context) {
         val currentLevel: Int,
         val bestLevelReached: Int,
         val vibrationEnabled: Boolean,
+        val soundEnabled: Boolean,
     )
 
     val progress: Flow<GameProgress> = context.dataStore.data.map { prefs ->
@@ -27,6 +28,7 @@ class GamePreferences(private val context: Context) {
             currentLevel = prefs[KEY_CURRENT_LEVEL] ?: 1,
             bestLevelReached = prefs[KEY_BEST_LEVEL] ?: 1,
             vibrationEnabled = prefs[KEY_VIBRATION] ?: true,
+            soundEnabled = prefs[KEY_SOUND] ?: true,
         )
     }
 
@@ -42,9 +44,14 @@ class GamePreferences(private val context: Context) {
         context.dataStore.edit { it[KEY_VIBRATION] = enabled }
     }
 
+    suspend fun setSoundEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_SOUND] = enabled }
+    }
+
     private companion object {
         val KEY_CURRENT_LEVEL = intPreferencesKey("current_level")
         val KEY_BEST_LEVEL = intPreferencesKey("best_level_reached")
         val KEY_VIBRATION = booleanPreferencesKey("vibration_enabled")
+        val KEY_SOUND = booleanPreferencesKey("sound_enabled")
     }
 }

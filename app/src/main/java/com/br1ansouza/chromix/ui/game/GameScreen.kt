@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,9 +18,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Vibration
@@ -30,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,10 +48,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.br1ansouza.chromix.domain.GameState
 import com.br1ansouza.chromix.ui.haptics.GameHaptics
+import com.br1ansouza.chromix.ui.sound.GameSounds
 import com.br1ansouza.chromix.viewmodel.GameViewModel
 import kotlinx.coroutines.launch
 
@@ -63,6 +73,10 @@ fun GameScreen(
     }
     val context = LocalContext.current
     val haptics = remember { GameHaptics(context) }
+    val sounds = remember { GameSounds(context) }
+    DisposableEffect(Unit) {
+        onDispose { sounds.release() }
+    }
 
     // (tubeId, seq) para reiniciar a animação de shake a cada movimento inválido.
     var shakeTrigger by remember { mutableStateOf<Pair<Int, Long>?>(null) }
@@ -70,14 +84,19 @@ fun GameScreen(
         var seq = 0L
         viewModel.events.collect { event ->
             val vibrate = viewModel.uiState.value?.vibrationEnabled == true
+            val sound = viewModel.uiState.value?.soundEnabled == true
             when (event) {
+                is GameViewModel.GameEvent.TubeSelected -> if (sound) sounds.ballSelected()
                 is GameViewModel.GameEvent.InvalidMove -> {
                     shakeTrigger = event.tubeId to ++seq
                     if (vibrate) haptics.invalidMove()
                 }
                 is GameViewModel.GameEvent.ValidMove -> if (vibrate) haptics.validMove()
                 is GameViewModel.GameEvent.TubeCompleted -> if (vibrate) haptics.tubeCompleted()
-                is GameViewModel.GameEvent.LevelWon -> if (vibrate) haptics.levelWon()
+                is GameViewModel.GameEvent.LevelWon -> {
+                    if (vibrate) haptics.levelWon()
+                    if (sound) sounds.levelWon()
+                }
             }
         }
     }
@@ -104,9 +123,11 @@ fun GameScreen(
                 levelNumber = state.levelNumber,
                 canUndo = state.canUndo,
                 vibrationEnabled = state.vibrationEnabled,
+                soundEnabled = state.soundEnabled,
                 onUndo = viewModel::undo,
                 onReset = animatedReset,
                 onToggleVibration = viewModel::toggleVibration,
+                onToggleSound = viewModel::toggleSound,
                 onOpenLevels = onOpenLevels,
             )
 
@@ -151,9 +172,11 @@ private fun GameHud(
     levelNumber: Int,
     canUndo: Boolean,
     vibrationEnabled: Boolean,
+    soundEnabled: Boolean,
     onUndo: () -> Unit,
     onReset: () -> Unit,
     onToggleVibration: () -> Unit,
+    onToggleSound: () -> Unit,
     onOpenLevels: () -> Unit,
 ) {
     Row(
@@ -168,6 +191,17 @@ private fun GameHud(
             color = Color.White,
         )
         Spacer(modifier = Modifier.weight(1f))
+        IconButton(onClick = onToggleSound) {
+            Icon(
+                imageVector = if (soundEnabled) {
+                    Icons.AutoMirrored.Filled.VolumeUp
+                } else {
+                    Icons.AutoMirrored.Filled.VolumeOff
+                },
+                contentDescription = if (soundEnabled) "Desativar som" else "Ativar som",
+                tint = if (soundEnabled) Color.White else Color.White.copy(alpha = 0.3f),
+            )
+        }
         IconButton(onClick = onToggleVibration) {
             Icon(
                 imageVector = Icons.Filled.Vibration,
@@ -222,39 +256,76 @@ private fun WinOverlay(
                 .background(Color.Black.copy(alpha = 0.72f)),
             contentAlignment = Alignment.Center,
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Comemoração na moral gaúcha, estável por nível.
-                val exclamations = remember {
-                    listOf(
-                        "Bah, tri massa!",
-                        "Tchê, mandou bem!",
-                        "Mas que capaz!",
-                        "Baita capricho!",
-                        "Tri bem!",
+            // Comemoração na moral gaúcha, estável por nível.
+            val exclamations = remember {
+                listOf(
+                    "Bah, tri massa!",
+                    "Tchê, mandou bem!",
+                    "Mas que capaz!",
+                    "Baita capricho!",
+                    "Tri bem!",
+                )
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth(0.84f)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.10f),
+                        shape = RoundedCornerShape(24.dp),
                     )
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
+            ) {
+                // Listras da bandeira do RS coroando o card.
+                Row {
+                    listOf(
+                        Color(0xFF00963F),
+                        Color(0xFFDF2A33),
+                        Color(0xFFECBE13),
+                    ).forEach { color ->
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 2.dp)
+                                .size(width = 30.dp, height = 4.dp)
+                                .background(color, RoundedCornerShape(2.dp)),
+                        )
+                    }
                 }
                 Text(
                     text = exclamations[levelNumber % exclamations.size],
-                    style = MaterialTheme.typography.headlineMedium,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.secondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 16.dp),
                 )
                 Text(
                     text = "Nível $levelNumber concluído",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 6.dp),
+                    modifier = Modifier.padding(top = 8.dp),
                 )
                 Text(
                     text = "$moveCount movimentos",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(top = 4.dp),
                 )
                 Button(
                     onClick = onNextLevel,
-                    modifier = Modifier.padding(top = 24.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
                 ) {
-                    Text("Próximo nível")
+                    Text(
+                        text = "Próximo nível",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
                 }
                 TextButton(
                     onClick = onBackToLevels,
