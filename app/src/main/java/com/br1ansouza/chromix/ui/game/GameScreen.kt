@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Button
@@ -25,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,7 +45,10 @@ import com.br1ansouza.chromix.ui.haptics.GameHaptics
 import com.br1ansouza.chromix.viewmodel.GameViewModel
 
 @Composable
-fun GameScreen(viewModel: GameViewModel = viewModel()) {
+fun GameScreen(
+    viewModel: GameViewModel = viewModel(),
+    onOpenLevels: () -> Unit = {},
+) {
     val loadedState by viewModel.uiState.collectAsState()
     val state = loadedState ?: run {
         // Progresso ainda carregando (milissegundos): mantém a tela preta.
@@ -85,6 +90,7 @@ fun GameScreen(viewModel: GameViewModel = viewModel()) {
                 onUndo = viewModel::undo,
                 onReset = viewModel::resetLevel,
                 onToggleVibration = viewModel::toggleVibration,
+                onOpenLevels = onOpenLevels,
             )
 
             Crossfade(
@@ -111,6 +117,7 @@ fun GameScreen(viewModel: GameViewModel = viewModel()) {
             levelNumber = state.levelNumber,
             moveCount = state.moveCount,
             onNextLevel = viewModel::nextLevel,
+            onBackToLevels = onOpenLevels,
         )
     }
 }
@@ -123,6 +130,7 @@ private fun GameHud(
     onUndo: () -> Unit,
     onReset: () -> Unit,
     onToggleVibration: () -> Unit,
+    onOpenLevels: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -161,6 +169,13 @@ private fun GameHud(
                 tint = Color.White,
             )
         }
+        IconButton(onClick = onOpenLevels) {
+            Icon(
+                imageVector = Icons.Filled.GridView,
+                contentDescription = "Escolher nível",
+                tint = Color.White,
+            )
+        }
     }
 }
 
@@ -170,6 +185,7 @@ private fun WinOverlay(
     levelNumber: Int,
     moveCount: Int,
     onNextLevel: () -> Unit,
+    onBackToLevels: () -> Unit,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -199,6 +215,12 @@ private fun WinOverlay(
                     modifier = Modifier.padding(top = 24.dp),
                 ) {
                     Text("Próximo nível")
+                }
+                TextButton(
+                    onClick = onBackToLevels,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text("Voltar aos níveis", color = Color.White.copy(alpha = 0.7f))
                 }
             }
         }
