@@ -86,7 +86,10 @@ fun GameScreen(
             val vibrate = viewModel.uiState.value?.vibrationEnabled == true
             val sound = viewModel.uiState.value?.soundEnabled == true
             when (event) {
-                is GameViewModel.GameEvent.TubeSelected -> if (sound) sounds.ballSelected()
+                is GameViewModel.GameEvent.TubeSelected -> {
+                    if (sound) sounds.ballSelected()
+                    if (vibrate) haptics.tubeSelected()
+                }
                 is GameViewModel.GameEvent.InvalidMove -> {
                     shakeTrigger = event.tubeId to ++seq
                     if (vibrate) haptics.invalidMove()

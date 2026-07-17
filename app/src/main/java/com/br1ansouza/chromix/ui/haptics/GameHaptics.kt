@@ -23,6 +23,8 @@ class GameHaptics(context: Context) {
             context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         }
 
+    fun tubeSelected() = oneShot(10)
+
     fun validMove() = oneShot(12)
 
     fun invalidMove() = oneShot(30)
