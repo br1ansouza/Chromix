@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Marrom escuro amostrado do fundo do logo. -->
-    <color name="ic_launcher_background">#4A3520</color>
+    <!-- Fundo escuro neutro: o emblema preenche a máscara, sem borda marrom. -->
+    <color name="ic_launcher_background">#121216</color>
     <!-- Preto levemente clareado, mesmo valor do colorScheme.background. -->
     <color name="app_background">#121216</color>
 </resources>
