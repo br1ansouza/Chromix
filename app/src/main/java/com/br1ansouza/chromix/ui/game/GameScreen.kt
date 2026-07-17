@@ -44,7 +44,12 @@ import com.br1ansouza.chromix.viewmodel.GameViewModel
 
 @Composable
 fun GameScreen(viewModel: GameViewModel = viewModel()) {
-    val state by viewModel.uiState.collectAsState()
+    val loadedState by viewModel.uiState.collectAsState()
+    val state = loadedState ?: run {
+        // Progresso ainda carregando (milissegundos): mantém a tela preta.
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+        return
+    }
     val context = LocalContext.current
     val haptics = remember { GameHaptics(context) }
 
@@ -53,7 +58,7 @@ fun GameScreen(viewModel: GameViewModel = viewModel()) {
     LaunchedEffect(Unit) {
         var seq = 0L
         viewModel.events.collect { event ->
-            val vibrate = viewModel.uiState.value.vibrationEnabled
+            val vibrate = viewModel.uiState.value?.vibrationEnabled == true
             when (event) {
                 is GameViewModel.GameEvent.InvalidMove -> {
                     shakeTrigger = event.tubeId to ++seq
