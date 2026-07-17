@@ -32,7 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-private const val LOOKAHEAD_LEVELS = 60
+// As fases são procedurais e infinitas; a grade mostra um horizonte generoso
+// para deixar isso claro (os bloqueados seguem inacessíveis até desbloquear).
+private const val MIN_GRID_LEVELS = 9999
+private const val LOOKAHEAD_LEVELS = 100
 
 /**
  * Grade de níveis: concluídos com check, atual destacado, futuros bloqueados
@@ -47,7 +50,7 @@ fun LevelsScreen(
     onBack: () -> Unit,
 ) {
     val levels = remember(bestLevelReached) {
-        (1..bestLevelReached + LOOKAHEAD_LEVELS).toList()
+        (1..maxOf(bestLevelReached + LOOKAHEAD_LEVELS, MIN_GRID_LEVELS)).toList()
     }
     val gridState = rememberLazyGridState(
         initialFirstVisibleItemIndex = (currentLevel - 1).coerceAtLeast(0)
