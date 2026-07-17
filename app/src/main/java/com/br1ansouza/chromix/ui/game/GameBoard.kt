@@ -78,9 +78,11 @@ fun GameBoard(
         val perRow = ceil(tubeCount / rows.toFloat()).toInt()
         val capacity = state.tubeCapacity
 
-        val widthBased = (maxWidth / perRow) - 22.dp
-        val heightBased = (maxHeight / rows - 40.dp) / (capacity + 1)
-        val ballSizeDp: Dp = minOf(52.dp, widthBased, heightBased)
+        // Ocupa o máximo da tela: teto alto e margens mínimas (sobrava muita
+        // borda em telas grandes).
+        val widthBased = (maxWidth / perRow) - 18.dp
+        val heightBased = (maxHeight / rows - 32.dp) / (capacity + 1)
+        val ballSizeDp: Dp = minOf(72.dp, widthBased, heightBased)
 
         val density = LocalDensity.current
         val metrics = with(density) {
@@ -135,7 +137,7 @@ fun GameBoard(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             state.tubes.chunked(perRow).forEach { rowTubes ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     rowTubes.forEach { tube ->
                         TubeView(
                             tube = tube,
