@@ -50,9 +50,10 @@ fun GameScreen(
     onOpenLevels: () -> Unit = {},
 ) {
     val loadedState by viewModel.uiState.collectAsState()
+    val background = MaterialTheme.colorScheme.background
     val state = loadedState ?: run {
-        // Progresso ainda carregando (milissegundos): mantém a tela preta.
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+        // Progresso ainda carregando (milissegundos): mantém a tela vazia.
+        Box(modifier = Modifier.fillMaxSize().background(background))
         return
     }
     val context = LocalContext.current
@@ -79,7 +80,7 @@ fun GameScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(background)
             .statusBarsPadding(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
