@@ -11,9 +11,9 @@ private val ChromixColorScheme = darkColorScheme(
     onPrimary = Color.Black,
     secondary = Color(0xFF69F0AE),
     onSecondary = Color.Black,
-    background = Color.Black,
+    background = Color(0xFF121216),
     onBackground = Color.White,
-    surface = Color(0xFF121212),
+    surface = Color(0xFF1B1B21),
     onSurface = Color.White,
     error = Color(0xFFFF5252),
 )
