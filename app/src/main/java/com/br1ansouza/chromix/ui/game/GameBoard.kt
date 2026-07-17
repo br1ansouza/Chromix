@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,15 +63,6 @@ private data class BoardMetrics(
     val liftedCenter: Offset get() = Offset(tubeWidth / 2f, headroom * 0.5f)
 }
 
-private data class Flight(
-    val seq: Long,
-    val colorId: Int,
-    val toTubeId: Int,
-    val hiddenIndex: Int,
-    val start: Offset,
-    val end: Offset,
-)
-
 private const val MAX_TUBES_PER_ROW = 6
 
 @Composable
@@ -106,37 +98,33 @@ fun GameBoard(
 
         val tubePositions = remember { mutableStateMapOf<Int, Offset>() }
         var boardOrigin by remember { mutableStateOf(Offset.Zero) }
-        var flight by remember { mutableStateOf<Flight?>(null) }
+
+        // O voo é derivado do estado na própria composição: no mesmo frame em que
+        // o movimento é aplicado, a bolinha destino já nasce escondida e o overlay
+        // já desenha na posição inicial — sem "teleporte" antes da animação.
+        var completedFlightSeq by remember { mutableLongStateOf(0L) }
         var flightProgress by remember { mutableFloatStateOf(0f) }
+        val pendingMove = state.lastMove?.takeIf { it.seq > completedFlightSeq }
+        remember(pendingMove?.seq) { flightProgress = 0f }
 
-        // Dispara a animação de voo quando um movimento é aplicado.
-        LaunchedEffect(state.lastMove) {
+        LaunchedEffect(state.lastMove?.seq) {
             val record = state.lastMove ?: return@LaunchedEffect
-            // Posições em coordenadas de root; a origem do tabuleiro é subtraída
-            // só aqui, quando ambas já estão estabilizadas pelo layout.
-            val fromPos = tubePositions[record.move.fromTubeId]?.minus(boardOrigin)
-                ?: return@LaunchedEffect
-            val toPos = tubePositions[record.move.toTubeId]?.minus(boardOrigin)
-                ?: return@LaunchedEffect
-            val destTube = state.tubes.first { it.id == record.move.toTubeId }
-            val landedIndex = destTube.balls.size - 1
-
-            flight = Flight(
-                seq = record.seq,
-                colorId = record.colorId,
-                toTubeId = record.move.toTubeId,
-                hiddenIndex = landedIndex,
-                start = fromPos + metrics.liftedCenter,
-                end = toPos + metrics.ballCenter(landedIndex),
-            )
+            if (record.seq <= completedFlightSeq) return@LaunchedEffect
             try {
-                val anim = Animatable(0f)
-                anim.animateTo(1f, tween(durationMillis = 260, easing = FastOutSlowInEasing)) {
+                Animatable(0f).animateTo(
+                    1f,
+                    tween(durationMillis = 260, easing = FastOutSlowInEasing),
+                ) {
                     flightProgress = value
                 }
             } finally {
-                flight = null
+                completedFlightSeq = record.seq
             }
+        }
+
+        val hiddenTubeId = pendingMove?.move?.toTubeId
+        val hiddenIndex = hiddenTubeId?.let { id ->
+            state.tubes.first { it.id == id }.balls.size - 1
         }
 
         Column(
@@ -149,16 +137,14 @@ fun GameBoard(
             state.tubes.chunked(perRow).forEach { rowTubes ->
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     rowTubes.forEach { tube ->
-                        val activeFlight = flight
                         TubeView(
                             tube = tube,
                             metrics = metrics,
                             widthDp = tubeWidthDp,
                             heightDp = tubeTotalHeightDp,
                             isSelected = state.selectedTubeId == tube.id,
-                            hiddenBallIndex = activeFlight
-                                ?.takeIf { it.toTubeId == tube.id }
-                                ?.hiddenIndex,
+                            isFlightSource = pendingMove?.move?.fromTubeId == tube.id,
+                            hiddenBallIndex = if (tube.id == hiddenTubeId) hiddenIndex else null,
                             shakeSeq = shakeTrigger?.takeIf { it.first == tube.id }?.second,
                             onTap = { onTubeTap(tube.id) },
                             onPositioned = { pos -> tubePositions[tube.id] = pos },
@@ -169,23 +155,30 @@ fun GameBoard(
         }
 
         // Overlay da bolinha em voo, em arco Bézier quadrático.
-        flight?.let { f ->
+        pendingMove?.let { record ->
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
                     .zIndex(2f)
             ) {
+                val fromPos = tubePositions[record.move.fromTubeId]?.minus(boardOrigin)
+                    ?: return@Canvas
+                val toPos = tubePositions[record.move.toTubeId]?.minus(boardOrigin)
+                    ?: return@Canvas
+                val start = fromPos + metrics.liftedCenter
+                val end = toPos + metrics.ballCenter(hiddenIndex ?: return@Canvas)
+
                 val t = flightProgress
                 val control = Offset(
-                    (f.start.x + f.end.x) / 2f,
-                    min(f.start.y, f.end.y) - metrics.ballSize * 1.4f,
+                    (start.x + end.x) / 2f,
+                    min(start.y, end.y) - metrics.ballSize * 1.4f,
                 )
                 val oneMinusT = 1f - t
                 val pos = Offset(
-                    oneMinusT * oneMinusT * f.start.x + 2 * oneMinusT * t * control.x + t * t * f.end.x,
-                    oneMinusT * oneMinusT * f.start.y + 2 * oneMinusT * t * control.y + t * t * f.end.y,
+                    oneMinusT * oneMinusT * start.x + 2 * oneMinusT * t * control.x + t * t * end.x,
+                    oneMinusT * oneMinusT * start.y + 2 * oneMinusT * t * control.y + t * t * end.y,
                 )
-                drawBall(f.colorId, pos, metrics.ballSize / 2f * 0.92f)
+                drawBall(record.colorId, pos, metrics.ballSize / 2f * 0.92f)
             }
         }
     }
@@ -198,6 +191,7 @@ private fun TubeView(
     widthDp: Dp,
     heightDp: Dp,
     isSelected: Boolean,
+    isFlightSource: Boolean,
     hiddenBallIndex: Int?,
     shakeSeq: Long?,
     onTap: () -> Unit,
@@ -224,6 +218,18 @@ private fun TubeView(
         if (tube.isComplete) {
             pulse.animateTo(1.08f, tween(120))
             pulse.animateTo(1f, tween(160))
+        }
+    }
+
+    // Levantada suave da bolinha do topo ao selecionar. Quando a deseleção vem
+    // de um movimento (o voo assume a bolinha), o recuo é instantâneo para a
+    // nova bolinha do topo não aparecer descendo do nada.
+    val lift = remember { Animatable(0f) }
+    LaunchedEffect(isSelected) {
+        when {
+            isSelected -> lift.animateTo(1f, tween(140, easing = FastOutSlowInEasing))
+            isFlightSource -> lift.snapTo(0f)
+            lift.value > 0f -> lift.animateTo(0f, tween(120))
         }
     }
 
@@ -269,8 +275,12 @@ private fun TubeView(
             tube.balls.forEachIndexed { index, ball ->
                 if (index == hiddenBallIndex) return@forEachIndexed
                 val isTop = index == tube.balls.lastIndex
-                val center = if (isTop && isSelected) {
-                    metrics.liftedCenter
+                val center = if (isTop && lift.value > 0f) {
+                    val slot = metrics.ballCenter(index)
+                    Offset(
+                        slot.x,
+                        slot.y + (metrics.liftedCenter.y - slot.y) * lift.value,
+                    )
                 } else {
                     metrics.ballCenter(index)
                 }
