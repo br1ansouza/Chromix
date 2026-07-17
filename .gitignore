@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.navigation/
+output.json
+
+# Local configuration
+local.properties
+
+# Kotlin
+.kotlin/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Keystore (nunca versionar chaves)
+*.jks
+*.keystore
+
+# Lint / profiling
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+*.hprof
