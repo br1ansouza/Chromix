@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.br1ansouza.chromix.ui.game.GameScreen
+import com.br1ansouza.chromix.ui.home.HomeScreen
 import com.br1ansouza.chromix.ui.levels.LevelsScreen
 import com.br1ansouza.chromix.ui.theme.ChromixTheme
 import com.br1ansouza.chromix.viewmodel.GameViewModel
@@ -30,7 +31,7 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(
                     navController = navController,
-                    startDestination = "game",
+                    startDestination = "home",
                     enterTransition = {
                         fadeIn(tween(200)) + slideInHorizontally(tween(200)) { it / 8 }
                     },
@@ -40,6 +41,14 @@ class MainActivity : ComponentActivity() {
                     },
                     popExitTransition = { fadeOut(tween(200)) },
                 ) {
+                    composable("home") {
+                        val state by gameViewModel.uiState.collectAsState()
+                        HomeScreen(
+                            currentLevel = state?.levelNumber ?: 1,
+                            onStart = { navController.navigate("game") },
+                            onOpenLevels = { navController.navigate("levels") },
+                        )
+                    }
                     composable("game") {
                         GameScreen(
                             viewModel = gameViewModel,
@@ -56,7 +65,8 @@ class MainActivity : ComponentActivity() {
                                 if (level != state?.levelNumber) {
                                     gameViewModel.loadLevel(level)
                                 }
-                                navController.popBackStack()
+                                // Sempre cai na tela de jogo, viesse da home ou do jogo.
+                                navController.navigate("game") { popUpTo("home") }
                             },
                             onBack = { navController.popBackStack() },
                         )
