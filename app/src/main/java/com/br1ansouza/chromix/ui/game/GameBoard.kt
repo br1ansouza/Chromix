@@ -2,6 +2,7 @@ package com.br1ansouza.chromix.ui.game
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -64,6 +65,8 @@ private data class BoardMetrics(
 }
 
 private const val MAX_TUBES_PER_ROW = 6
+private const val FLIGHT_SEGMENT_MS = 220
+private const val FLIGHT_STAGGER_MS = 90
 
 @Composable
 fun GameBoard(
@@ -112,10 +115,14 @@ fun GameBoard(
         LaunchedEffect(state.lastMove?.seq) {
             val record = state.lastMove ?: return@LaunchedEffect
             if (record.seq <= completedFlightSeq) return@LaunchedEffect
+            // Grupo: bolinhas decolam em fila (stagger), cada uma com seu
+            // segmento de voo; o progresso mestre é linear e o easing é
+            // aplicado por segmento no desenho.
+            val totalMs = FLIGHT_SEGMENT_MS + (record.count - 1) * FLIGHT_STAGGER_MS
             try {
                 Animatable(0f).animateTo(
                     1f,
-                    tween(durationMillis = 260, easing = FastOutSlowInEasing),
+                    tween(durationMillis = totalMs, easing = LinearEasing),
                 ) {
                     flightProgress = value
                 }
@@ -125,8 +132,10 @@ fun GameBoard(
         }
 
         val hiddenTubeId = pendingMove?.move?.toTubeId
-        val hiddenIndex = hiddenTubeId?.let { id ->
-            state.tubes.first { it.id == id }.balls.size - 1
+        // No destino, as últimas [count] bolinhas ficam escondidas enquanto o
+        // overlay as desenha voando (ou já pousadas, no fim do segmento).
+        val hiddenFromIndex = pendingMove?.let { pm ->
+            state.tubes.first { it.id == pm.move.toTubeId }.balls.size - pm.count
         }
 
         Column(
@@ -146,7 +155,7 @@ fun GameBoard(
                             heightDp = tubeTotalHeightDp,
                             isSelected = state.selectedTubeId == tube.id,
                             isFlightSource = pendingMove?.move?.fromTubeId == tube.id,
-                            hiddenBallIndex = if (tube.id == hiddenTubeId) hiddenIndex else null,
+                            hiddenFromIndex = if (tube.id == hiddenTubeId) hiddenFromIndex else null,
                             shakeSeq = shakeTrigger?.takeIf { it.first == tube.id }?.second,
                             onTap = { onTubeTap(tube.id) },
                             onPositioned = { pos -> tubePositions[tube.id] = pos },
@@ -156,7 +165,7 @@ fun GameBoard(
             }
         }
 
-        // Overlay da bolinha em voo, em arco Bézier quadrático.
+        // Overlay das bolinhas em voo, em arco Bézier quadrático, em fila.
         pendingMove?.let { record ->
             Canvas(
                 modifier = Modifier
@@ -167,20 +176,29 @@ fun GameBoard(
                     ?: return@Canvas
                 val toPos = tubePositions[record.move.toTubeId]?.minus(boardOrigin)
                     ?: return@Canvas
+                val baseIndex = hiddenFromIndex ?: return@Canvas
                 val start = fromPos + metrics.liftedCenter
-                val end = toPos + metrics.ballCenter(hiddenIndex ?: return@Canvas)
+                val totalMs = FLIGHT_SEGMENT_MS + (record.count - 1) * FLIGHT_STAGGER_MS
 
-                val t = flightProgress
-                val control = Offset(
-                    (start.x + end.x) / 2f,
-                    min(start.y, end.y) - metrics.ballSize * 1.4f,
-                )
-                val oneMinusT = 1f - t
-                val pos = Offset(
-                    oneMinusT * oneMinusT * start.x + 2 * oneMinusT * t * control.x + t * t * end.x,
-                    oneMinusT * oneMinusT * start.y + 2 * oneMinusT * t * control.y + t * t * end.y,
-                )
-                drawBall(record.colorId, pos, metrics.ballSize / 2f * 0.92f)
+                repeat(record.count) { i ->
+                    val end = toPos + metrics.ballCenter(baseIndex + i)
+                    val raw = ((flightProgress * totalMs - i * FLIGHT_STAGGER_MS) /
+                        FLIGHT_SEGMENT_MS).coerceIn(0f, 1f)
+                    val t = FastOutSlowInEasing.transform(raw)
+
+                    val control = Offset(
+                        (start.x + end.x) / 2f,
+                        min(start.y, end.y) - metrics.ballSize * 1.4f,
+                    )
+                    val oneMinusT = 1f - t
+                    val pos = Offset(
+                        oneMinusT * oneMinusT * start.x + 2 * oneMinusT * t * control.x +
+                            t * t * end.x,
+                        oneMinusT * oneMinusT * start.y + 2 * oneMinusT * t * control.y +
+                            t * t * end.y,
+                    )
+                    drawBall(record.colorId, pos, metrics.ballSize / 2f * 0.92f)
+                }
             }
         }
     }
@@ -194,7 +212,7 @@ private fun TubeView(
     heightDp: Dp,
     isSelected: Boolean,
     isFlightSource: Boolean,
-    hiddenBallIndex: Int?,
+    hiddenFromIndex: Int?,
     shakeSeq: Long?,
     onTap: () -> Unit,
     onPositioned: (Offset) -> Unit,
@@ -275,7 +293,7 @@ private fun TubeView(
             )
 
             tube.balls.forEachIndexed { index, ball ->
-                if (index == hiddenBallIndex) return@forEachIndexed
+                if (hiddenFromIndex != null && index >= hiddenFromIndex) return@forEachIndexed
                 val isTop = index == tube.balls.lastIndex
                 val center = if (isTop && lift.value > 0f) {
                     val slot = metrics.ballCenter(index)

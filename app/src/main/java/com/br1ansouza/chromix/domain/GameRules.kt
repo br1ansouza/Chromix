@@ -17,7 +17,9 @@ object GameRules {
     }
 
     /**
-     * Aplica o movimento e retorna a nova lista de tubos, ou null se inválido.
+     * Aplica o movimento de UMA bolinha e retorna a nova lista de tubos, ou
+     * null se inválido. Base das provas de solvabilidade (a solução gravada
+     * pelo gerador é em movimentos unitários).
      */
     fun applyMove(tubes: List<Tube>, move: Move): List<Tube>? {
         val from = tubes.firstOrNull { it.id == move.fromTubeId } ?: return null
@@ -33,6 +35,33 @@ object GameRules {
                 else -> it
             }
         }
+    }
+
+    /**
+     * Quantas bolinhas o movimento em grupo carrega: a sequência de mesma cor
+     * no topo da origem, limitada ao espaço livre do destino. Zero se inválido.
+     */
+    fun groupMoveSize(from: Tube, to: Tube): Int {
+        if (!canMove(from, to)) return 0
+        val topColor = from.topBall!!.colorId
+        val run = from.balls.reversed().takeWhile { it.colorId == topColor }.count()
+        return minOf(run, to.capacity - to.balls.size)
+    }
+
+    /**
+     * Movimento em grupo: move toda a sequência de mesma cor do topo que
+     * couber no destino (um movimento unitário repetido). Retorna a nova
+     * lista de tubos e a quantidade movida, ou null se inválido.
+     */
+    fun applyGroupMove(tubes: List<Tube>, move: Move): Pair<List<Tube>, Int>? {
+        val from = tubes.firstOrNull { it.id == move.fromTubeId } ?: return null
+        val to = tubes.firstOrNull { it.id == move.toTubeId } ?: return null
+        val count = groupMoveSize(from, to)
+        if (count == 0) return null
+
+        var result = tubes
+        repeat(count) { result = applyMove(result, move)!! }
+        return result to count
     }
 
     /** Vitória: todo tubo vazio ou cheio com uma única cor. */

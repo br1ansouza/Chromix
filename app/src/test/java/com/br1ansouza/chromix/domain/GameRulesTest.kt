@@ -58,6 +58,45 @@ class GameRulesTest {
     }
 
     @Test
+    fun `group move carries the whole same-color run`() {
+        val tubes = listOf(tube(0, 1, 2, 2), tube(1, 2))
+        val result = GameRules.applyGroupMove(tubes, Move(0, 1))
+        assertNotNull(result)
+        val (newTubes, count) = result!!
+        assertEquals(2, count)
+        assertEquals(listOf(Ball(1)), newTubes.first { it.id == 0 }.balls)
+        assertEquals(
+            listOf(Ball(2), Ball(2), Ball(2)),
+            newTubes.first { it.id == 1 }.balls,
+        )
+    }
+
+    @Test
+    fun `group move is capped by destination space`() {
+        val tubes = listOf(tube(0, 2, 2, 2), tube(1, 2, 2, 2))
+        val result = GameRules.applyGroupMove(tubes, Move(0, 1))
+        assertNotNull(result)
+        val (newTubes, count) = result!!
+        assertEquals(1, count)
+        assertEquals(2, newTubes.first { it.id == 0 }.balls.size)
+        assertEquals(4, newTubes.first { it.id == 1 }.balls.size)
+    }
+
+    @Test
+    fun `group move to empty tube carries the run`() {
+        val tubes = listOf(tube(0, 1, 3, 3, 3), tube(1))
+        val (newTubes, count) = GameRules.applyGroupMove(tubes, Move(0, 1))!!
+        assertEquals(3, count)
+        assertEquals(listOf(Ball(1)), newTubes.first { it.id == 0 }.balls)
+    }
+
+    @Test
+    fun `group move returns null when invalid`() {
+        val tubes = listOf(tube(0, 1), tube(1, 2))
+        assertNull(GameRules.applyGroupMove(tubes, Move(0, 1)))
+    }
+
+    @Test
     fun `won when every tube is empty or complete`() {
         val tubes = listOf(tube(0, 1, 1, 1, 1), tube(1, 2, 2, 2, 2), tube(2))
         assertTrue(GameRules.isWon(tubes))
