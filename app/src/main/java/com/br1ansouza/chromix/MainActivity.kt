@@ -52,7 +52,10 @@ class MainActivity : ComponentActivity() {
                             currentLevel = state?.levelNumber ?: 1,
                             bestLevelReached = state?.bestLevelReached ?: 1,
                             onLevelSelected = { level ->
-                                gameViewModel.loadLevel(level)
+                                // Tocar no nível em andamento não reinicia o progresso.
+                                if (level != state?.levelNumber) {
+                                    gameViewModel.loadLevel(level)
+                                }
                                 navController.popBackStack()
                             },
                             onBack = { navController.popBackStack() },
