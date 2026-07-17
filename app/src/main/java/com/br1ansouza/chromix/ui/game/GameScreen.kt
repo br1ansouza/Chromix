@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,22 +35,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.br1ansouza.chromix.domain.GameState
+import com.br1ansouza.chromix.ui.haptics.GameHaptics
 import com.br1ansouza.chromix.viewmodel.GameViewModel
 
 @Composable
 fun GameScreen(viewModel: GameViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val haptics = remember { GameHaptics(context) }
 
     // (tubeId, seq) para reiniciar a animação de shake a cada movimento inválido.
     var shakeTrigger by remember { mutableStateOf<Pair<Int, Long>?>(null) }
     LaunchedEffect(Unit) {
         var seq = 0L
         viewModel.events.collect { event ->
-            if (event is GameViewModel.GameEvent.InvalidMove) {
-                shakeTrigger = event.tubeId to ++seq
+            val vibrate = viewModel.uiState.value.vibrationEnabled
+            when (event) {
+                is GameViewModel.GameEvent.InvalidMove -> {
+                    shakeTrigger = event.tubeId to ++seq
+                    if (vibrate) haptics.invalidMove()
+                }
+                is GameViewModel.GameEvent.ValidMove -> if (vibrate) haptics.validMove()
+                is GameViewModel.GameEvent.TubeCompleted -> if (vibrate) haptics.tubeCompleted()
+                is GameViewModel.GameEvent.LevelWon -> if (vibrate) haptics.levelWon()
             }
         }
     }
@@ -64,8 +76,10 @@ fun GameScreen(viewModel: GameViewModel = viewModel()) {
             GameHud(
                 levelNumber = state.levelNumber,
                 canUndo = state.canUndo,
+                vibrationEnabled = state.vibrationEnabled,
                 onUndo = viewModel::undo,
                 onReset = viewModel::resetLevel,
+                onToggleVibration = viewModel::toggleVibration,
             )
 
             Crossfade(
@@ -100,8 +114,10 @@ fun GameScreen(viewModel: GameViewModel = viewModel()) {
 private fun GameHud(
     levelNumber: Int,
     canUndo: Boolean,
+    vibrationEnabled: Boolean,
     onUndo: () -> Unit,
     onReset: () -> Unit,
+    onToggleVibration: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -115,6 +131,17 @@ private fun GameHud(
             color = Color.White,
         )
         Spacer(modifier = Modifier.weight(1f))
+        IconButton(onClick = onToggleVibration) {
+            Icon(
+                imageVector = Icons.Filled.Vibration,
+                contentDescription = if (vibrationEnabled) {
+                    "Desativar vibração"
+                } else {
+                    "Ativar vibração"
+                },
+                tint = if (vibrationEnabled) Color.White else Color.White.copy(alpha = 0.3f),
+            )
+        }
         IconButton(onClick = onUndo, enabled = canUndo) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Undo,

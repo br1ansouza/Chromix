@@ -27,6 +27,7 @@ class GameViewModel : ViewModel() {
         val moveCount: Int = 0,
         val canUndo: Boolean = false,
         val lastMove: MoveRecord? = null,
+        val vibrationEnabled: Boolean = true,
     )
 
     sealed interface GameEvent {
@@ -102,12 +103,21 @@ class GameViewModel : ViewModel() {
         )
     }
 
-    fun resetLevel() {
-        _uiState.value = newLevelState(_uiState.value.levelNumber)
+    fun toggleVibration() {
+        _uiState.value = _uiState.value.copy(
+            vibrationEnabled = !_uiState.value.vibrationEnabled
+        )
     }
 
-    fun nextLevel() {
-        _uiState.value = newLevelState(_uiState.value.levelNumber + 1)
+    fun resetLevel() = loadLevel(_uiState.value.levelNumber)
+
+    fun nextLevel() = loadLevel(_uiState.value.levelNumber + 1)
+
+    /** Troca de fase preservando as preferências do estado atual. */
+    private fun loadLevel(levelNumber: Int) {
+        _uiState.value = newLevelState(levelNumber).copy(
+            vibrationEnabled = _uiState.value.vibrationEnabled
+        )
     }
 
     private fun newLevelState(levelNumber: Int): GameUiState {
