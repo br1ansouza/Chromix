@@ -3,7 +3,9 @@ package com.br1ansouza.chromix.ui.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,7 +56,30 @@ fun HomeScreen(
             modifier = Modifier.size(240.dp),
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        // Listras da bandeira do RS.
+        Row(modifier = Modifier.padding(top = 20.dp)) {
+            listOf(
+                Color(0xFF00963F),
+                Color(0xFFDF2A33),
+                Color(0xFFECBE13),
+            ).forEach { color ->
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 2.dp)
+                        .size(width = 36.dp, height = 4.dp)
+                        .background(color, RoundedCornerShape(2.dp)),
+                )
+            }
+        }
+
+        Text(
+            text = "Um puzzle tri gaúcho",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.6f),
+            modifier = Modifier.padding(top = 12.dp),
+        )
+
+        Spacer(modifier = Modifier.height(36.dp))
 
         Button(
             onClick = onStart,

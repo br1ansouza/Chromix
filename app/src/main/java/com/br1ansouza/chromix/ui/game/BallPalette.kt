@@ -14,19 +14,22 @@ import androidx.compose.ui.graphics.drawscope.Stroke
  */
 object BallPalette {
 
+    // Paleta "pôr-do-sol no pampa": tons quentes + campos e céu, na pegada RS.
+    // Ordenada intercalando quente/frio para os primeiros níveis (que usam as
+    // primeiras N cores) terem contraste máximo entre si.
     val colors = listOf(
-        Color(0xFFFF5252), // 0 vermelho
-        Color(0xFFFF9100), // 1 laranja
-        Color(0xFFFFD740), // 2 amarelo
-        Color(0xFFC6FF00), // 3 lima
-        Color(0xFF69F0AE), // 4 verde
-        Color(0xFF1DE9B6), // 5 teal
-        Color(0xFF40C4FF), // 6 azul claro
-        Color(0xFF448AFF), // 7 azul
-        Color(0xFF7C4DFF), // 8 roxo
-        Color(0xFFE040FB), // 9 magenta
-        Color(0xFFFF4081), // 10 rosa
-        Color(0xFFA1887F), // 11 taupe
+        Color(0xFFDF2A33), // 0 vermelho
+        Color(0xFF2FB8AC), // 1 turquesa
+        Color(0xFFECBE13), // 2 dourado
+        Color(0xFF046D8B), // 3 azul profundo
+        Color(0xFFF8572D), // 4 laranja
+        Color(0xFF00963F), // 5 verde bandeira RS
+        Color(0xFFA22543), // 6 vinho
+        Color(0xFF93A42A), // 7 oliva
+        Color(0xFFF6B149), // 8 areia
+        Color(0xFF8C4A9E), // 9 violeta
+        Color(0xFF309292), // 10 petróleo
+        Color(0xFF6B312D), // 11 marrom
     )
 
     fun colorOf(colorId: Int): Color = colors[colorId % colors.size]
