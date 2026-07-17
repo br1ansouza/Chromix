@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Marrom escuro amostrado do fundo do logo. -->
+    <color name="ic_launcher_background">#4A3520</color>
+</resources>
