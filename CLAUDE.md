@@ -59,7 +59,13 @@ Features concluídas (todas mergeadas na main via PR):
 17. PR #18 `fix/selection-sound` — click em WAV (mp3 48ms não decodificava), vibração na seleção
 
 App validado no S21 FE do usuário (som, haptics, animações, persistência OK).
-Pendente: nada bloqueante.
+
+## Backlog (pedido pelo usuário em 2026-07-17, fazer na próxima sessão)
+
+1. **Frascos maiores** — muita borda sobrando, principalmente no S25 dele: subir o teto de `ballSize` (hoje 52dp) e reduzir margens no `GameBoard` (rever `widthBased`/`heightBased`).
+2. **Som ao desselecionar** — o click de seleção deve tocar também ao desselecionar a bolinha (tap no mesmo tubo).
+3. **GIF do mate no card de vitória** — https://tenor.com/pt-BR/view/mate-matecito-mate-ciafba-mates-mate-agro-gif-6758900996126760062 (postid 6758900996126760062, aspect 0.66). Pequeno, como detalhe: sobreposto ao botão "Próximo nível", canto inferior direito, na diagonal. Baixar o arquivo real do media.tenor.com e embutir offline (coil-gif ou WebP animado em drawable).
+4. **Movimento em grupo** — mover todas as bolinhas consecutivas de mesma cor do topo de uma vez, quantas couberem no destino (evita repetir 3x o mesmo movimento). Afeta `GameRules.applyMove` (retornar quantidade movida), animação de voo (bolinhas em fila), haptics/som (definir: 1 tick por grupo). Undo já cobre (snapshot de tubos). Solvabilidade preservada — multi-move é sequência de moves válidos.
 
 **Nota do gerador**: a spec pedia embaralhar com movimentos válidos normais, mas isso mantém tubos monocromáticos (fase trivial). Implementado com movimentos inversos (remove bolinha sobre mesma cor ou do fundo, solta em tubo não cheio) — solucionável por construção; teste reexecuta a solução gravada (fases 1–60).
 
