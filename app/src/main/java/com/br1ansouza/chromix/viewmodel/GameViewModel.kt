@@ -40,6 +40,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     sealed interface GameEvent {
         data object TubeSelected : GameEvent
+        data object TubeDeselected : GameEvent
         data object ValidMove : GameEvent
         data class InvalidMove(val tubeId: Int) : GameEvent
         data class TubeCompleted(val tubeId: Int) : GameEvent
@@ -82,7 +83,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
-            selected == tubeId -> _uiState.value = state.copy(selectedTubeId = null)
+            selected == tubeId -> {
+                _uiState.value = state.copy(selectedTubeId = null)
+                _events.tryEmit(GameEvent.TubeDeselected)
+            }
 
             else -> attemptMove(state, Move(selected, tubeId))
         }

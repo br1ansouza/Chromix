@@ -90,6 +90,7 @@ fun GameScreen(
                     if (sound) sounds.ballSelected()
                     if (vibrate) haptics.tubeSelected()
                 }
+                is GameViewModel.GameEvent.TubeDeselected -> if (sound) sounds.ballSelected()
                 is GameViewModel.GameEvent.InvalidMove -> {
                     shakeTrigger = event.tubeId to ++seq
                     if (vibrate) haptics.invalidMove()
