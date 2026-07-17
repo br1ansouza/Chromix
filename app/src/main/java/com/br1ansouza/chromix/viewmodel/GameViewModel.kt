@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Último movimento aplicado, com sequência para disparar a animação de voo. */
-    data class MoveRecord(val move: Move, val colorId: Int, val seq: Long)
+    data class MoveRecord(val move: Move, val colorId: Int, val count: Int, val seq: Long)
 
     data class GameUiState(
         val levelNumber: Int,
@@ -93,11 +93,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun attemptMove(state: GameUiState, move: Move) {
-        val newTubes = GameRules.applyMove(state.tubes, move)
-        if (newTubes == null) {
+        val result = GameRules.applyGroupMove(state.tubes, move)
+        if (result == null) {
             _events.tryEmit(GameEvent.InvalidMove(move.toTubeId))
             return
         }
+        val (newTubes, movedCount) = result
 
         undoStack.addLast(state.tubes)
         val destTube = newTubes.first { it.id == move.toTubeId }
@@ -112,7 +113,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             moveCount = state.moveCount + 1,
             canUndo = true,
             gameState = if (won) GameState.WON else GameState.PLAYING,
-            lastMove = MoveRecord(move, movedColor, ++moveSeq),
+            lastMove = MoveRecord(move, movedColor, movedCount, ++moveSeq),
             bestLevelReached = newBest,
         )
 
