@@ -22,9 +22,10 @@ local.properties
 # OS
 .DS_Store
 
-# Keystore (nunca versionar chaves)
+# Keystore e credenciais de assinatura (nunca versionar)
 *.jks
 *.keystore
+keystore.properties
 
 # Lint / profiling
 lint/intermediates/
