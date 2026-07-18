@@ -139,7 +139,7 @@ fun GameScreen(
     val animatedReset: () -> Unit = {
         scope.launch {
             boardVisibility.animateTo(0f, tween(120, easing = FastOutSlowInEasing))
-            viewModel.resetLevel()
+            viewModel.resetLevel()?.join()
             boardVisibility.animateTo(1f, tween(180, easing = FastOutSlowInEasing))
         }
     }
@@ -190,11 +190,39 @@ fun GameScreen(
             }
         }
 
+        // Aviso de beco sem saída: flutua sob o HUD, sem deslocar o tabuleiro.
+        AnimatedVisibility(
+            visible = state.noMovesLeft,
+            enter = fadeIn(tween(220)) + scaleIn(initialScale = 0.9f, animationSpec = tween(220)),
+            exit = fadeOut(tween(150)),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 64.dp),
+        ) {
+            Text(
+                text = "Bah, sem saída — desfaz ou reinicia, tchê",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier
+                    .background(
+                        MaterialTheme.colorScheme.surface,
+                        RoundedCornerShape(16.dp),
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+
         WinOverlay(
             visible = showWinOverlay,
             levelNumber = state.levelNumber,
             moveCount = state.moveCount,
-            onNextLevel = viewModel::nextLevel,
+            onNextLevel = { viewModel.nextLevel() },
             onBackToLevels = onOpenLevels,
         )
     }

@@ -10,6 +10,8 @@ import com.br1ansouza.chromix.domain.LevelGenerator
 import com.br1ansouza.chromix.domain.Move
 import com.br1ansouza.chromix.domain.Tube
 import kotlin.math.max
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -36,6 +39,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val lastMove: MoveRecord? = null,
         val vibrationEnabled: Boolean = true,
         val soundEnabled: Boolean = true,
+        /** Beco sem saída: nenhum movimento útil restante — só undo/reset salvam. */
+        val noMovesLeft: Boolean = false,
     )
 
     sealed interface GameEvent {
@@ -77,7 +82,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         when {
             selected == null -> {
                 val tube = state.tubes.first { it.id == tubeId }
-                if (!tube.isEmpty) {
+                if (tube.isComplete) {
+                    // Tubo resolvido é travado: shake avisa que não mexe mais.
+                    _events.tryEmit(GameEvent.InvalidMove(tubeId))
+                } else if (!tube.isEmpty) {
                     _uiState.value = state.copy(selectedTubeId = tubeId)
                     _events.tryEmit(GameEvent.TubeSelected)
                 }
@@ -115,6 +123,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             gameState = if (won) GameState.WON else GameState.PLAYING,
             lastMove = MoveRecord(move, movedColor, movedCount, ++moveSeq),
             bestLevelReached = newBest,
+            noMovesLeft = !won && !hasUsefulMove(newTubes),
         )
 
         _events.tryEmit(GameEvent.ValidMove)
@@ -135,8 +144,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             moveCount = state.moveCount - 1,
             canUndo = undoStack.isNotEmpty(),
             lastMove = null,
+            noMovesLeft = !hasUsefulMove(previous),
         )
     }
+
+    /**
+     * Existe movimento que muda o jogo? Tubos completos são ignorados como
+     * origem: mexer neles nunca ajuda, então só eles terem movimento é beco
+     * sem saída do mesmo jeito.
+     */
+    private fun hasUsefulMove(tubes: List<Tube>): Boolean =
+        tubes.any { from ->
+            !from.isEmpty && !from.isComplete &&
+                tubes.any { to -> GameRules.canMove(from, to) }
+        }
 
     fun toggleVibration() {
         val state = _uiState.value ?: return
@@ -152,29 +173,25 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { prefs.setSoundEnabled(enabled) }
     }
 
-    fun resetLevel() {
-        val state = _uiState.value ?: return
-        loadLevel(state.levelNumber)
-    }
+    fun resetLevel(): Job? = _uiState.value?.let { loadLevel(it.levelNumber) }
 
-    fun nextLevel() {
-        val state = _uiState.value ?: return
-        loadLevel(state.levelNumber + 1)
-    }
+    fun nextLevel(): Job? = _uiState.value?.let { loadLevel(it.levelNumber + 1) }
 
     /** Troca de fase preservando preferências e recorde, persistindo o nível atual. */
-    fun loadLevel(levelNumber: Int) {
-        val state = _uiState.value ?: return
-        _uiState.value = newLevelState(levelNumber).copy(
+    fun loadLevel(levelNumber: Int): Job = viewModelScope.launch {
+        val fresh = newLevelState(levelNumber)
+        val state = _uiState.value ?: return@launch
+        _uiState.value = fresh.copy(
             bestLevelReached = state.bestLevelReached,
             vibrationEnabled = state.vibrationEnabled,
             soundEnabled = state.soundEnabled,
         )
-        viewModelScope.launch { prefs.setCurrentLevel(levelNumber) }
+        prefs.setCurrentLevel(levelNumber)
     }
 
-    private fun newLevelState(levelNumber: Int): GameUiState {
-        val level = LevelGenerator.generate(levelNumber)
+    /** Geração fora da main thread: o solver pode passar de 100ms em fases raras. */
+    private suspend fun newLevelState(levelNumber: Int): GameUiState {
+        val level = withContext(Dispatchers.Default) { LevelGenerator.generate(levelNumber) }
         undoStack.clear()
         return GameUiState(
             levelNumber = levelNumber,
