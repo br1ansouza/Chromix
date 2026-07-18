@@ -14,12 +14,12 @@ APK pronto na página de [**Releases**](https://github.com/br1ansouza/Chromix/re
 
 ## Como jogar
 
-Toque num frasco para levantar a bolinha do topo (click + vibração sutil), depois toque no destino. O movimento vale se o destino estiver vazio ou com bolinha da mesma cor no topo (e não estiver cheio) — a bolinha voa em arco até o lugar. Movimento inválido dá shake no frasco. Vença quando todo frasco estiver vazio ou completo com uma cor só: "Bah, tri massa!".
+Toque num frasco para levantar a bolinha do topo (click + vibração sutil), depois toque no destino. O movimento vale se o destino estiver vazio ou com bolinha da mesma cor no topo (e não estiver cheio) — a bolinha voa em arco até o lugar. Movimento inválido dá shake no frasco; frasco completo fica travado. Se o tabuleiro ficar sem saída, o jogo avisa pra desfazer ou reiniciar. Vença quando todo frasco estiver vazio ou completo com uma cor só: "Bah, tri massa!".
 
 - **Undo** e **reset** ilimitados, sem custo
 - **Toggles no HUD**: som e vibração, salvos entre sessões
 - **Tela de níveis**: progressão linear, concluídos com check, nível atual destacado
-- **Dificuldade**: 4→12 cores (+1 a cada 3 níveis), tubos vazios 2→1 no nível 15, capacidade 4→6 a partir do 21
+- **Dificuldade**: 4→12 cores (+1 a cada 3 níveis), capacidade 4→6 a partir do 21, sempre 2 tubos vazios
 
 ## Stack
 
@@ -51,7 +51,7 @@ app/src/main/java/com/br1ansouza/chromix/
 └── viewmodel/   # GameViewModel (estado, undo, eventos)
 ```
 
-O gerador cria a fase "de trás pra frente" a partir do estado resolvido, com movimentos inversos — cada fase é solucionável por construção e determinística pelo número do nível. Testes unitários reexecutam a solução gravada das fases 1–60.
+O gerador distribui todas as bolinhas aleatoriamente e valida o tabuleiro com um solver que usa a mesma semântica de movimento do jogador — fases insolúveis ou fáceis demais (tubos meio prontos, pouca mistura) são rejeitadas e regeneradas, sempre de forma determinística pelo número do nível. Testes unitários reexecutam a solução encontrada pelo solver nas fases 1–60.
 
 ## Build
 

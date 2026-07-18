@@ -24,18 +24,17 @@ class LevelGeneratorTest {
             assertEquals(2, emptyTubes)
             assertEquals(4, tubeCapacity)
         }
-        with(LevelGenerator.paramsFor(14, rng)) {
-            assertEquals(2, emptyTubes)
-        }
         with(LevelGenerator.paramsFor(15, rng)) {
             assertEquals(9, colorCount)
-            assertEquals(1, emptyTubes)
+            assertEquals(2, emptyTubes)
         }
         with(LevelGenerator.paramsFor(30, rng)) {
+            assertEquals(2, emptyTubes)
             assertTrue(tubeCapacity in 4..5)
         }
         with(LevelGenerator.paramsFor(60, rng)) {
             assertEquals(12, colorCount)
+            assertEquals(2, emptyTubes)
             assertTrue(tubeCapacity in 5..6)
         }
     }
@@ -65,17 +64,47 @@ class LevelGeneratorTest {
     }
 
     @Test
-    fun `recorded solution solves every generated level`() {
+    fun `no tube starts with a monochrome bottom of 3 or more`() {
+        for (levelNumber in 1..60) {
+            val level = LevelGenerator.generate(levelNumber)
+            level.tubes.forEach { tube ->
+                if (tube.balls.size >= 3) {
+                    assertFalse(
+                        "level $levelNumber: tube ${tube.id} starts half-solved",
+                        tube.balls.take(3).all { it.colorId == tube.balls[0].colorId }
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `boards are well mixed`() {
+        for (levelNumber in 1..60) {
+            val level = LevelGenerator.generate(levelNumber)
+            val transitions = level.tubes.sumOf { tube ->
+                tube.balls.zipWithNext().count { (a, b) -> a.colorId != b.colorId }
+            }
+            val maxTransitions = level.tubes.sumOf { (it.balls.size - 1).coerceAtLeast(0) }
+            assertTrue(
+                "level $levelNumber: mix ratio ${transitions.toDouble() / maxTransitions}",
+                transitions >= maxTransitions * 0.6
+            )
+        }
+    }
+
+    @Test
+    fun `recorded solution solves every generated level with player move semantics`() {
         for (levelNumber in 1..60) {
             val (level, solution) = LevelGenerator.generateWithSolution(levelNumber)
             var tubes = level.tubes
             solution.forEachIndexed { index, move ->
-                val next = GameRules.applyMove(tubes, move)
+                val next = GameRules.applyGroupMove(tubes, move)
                 assertNotNull(
                     "level $levelNumber: invalid solution move #$index ($move)",
                     next
                 )
-                tubes = next!!
+                tubes = next!!.first
             }
             assertTrue("level $levelNumber: solution did not win", GameRules.isWon(tubes))
         }
