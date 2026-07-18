@@ -81,13 +81,16 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 > `/mnt/c/Users/<user>/AppData/Local/Android/Sdk/platform-tools/adb.exe`) apontando
 > para o APK com caminho Windows.
 
-### APK de release
+### APK de release (assinado)
+
+Copie `keystore.properties.example` para `keystore.properties` (gitignored) apontando para sua keystore e rode:
 
 ```bash
 ./gradlew :app:assembleRelease
+# saída: app/build/outputs/apk/release/app-release.apk (minificado + assinado)
 ```
 
-O APK sai minificado (R8) porém **sem assinatura**. Para instalar, assine com sua própria keystore (Android Studio: *Build > Generate Signed App Bundle / APK*) ou use o debug APK, que já resolve para uso pessoal.
+Sem o `keystore.properties`, o release sai sem assinatura. Os APKs publicados em [Releases](https://github.com/br1ansouza/Chromix/releases) são builds de release assinados.
 
 ## Créditos
 
