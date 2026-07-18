@@ -12,6 +12,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,6 +75,7 @@ import kotlinx.coroutines.launch
 fun GameScreen(
     viewModel: GameViewModel = viewModel(),
     onOpenLevels: () -> Unit = {},
+    onOpenHome: () -> Unit = {},
 ) {
     val loadedState by viewModel.uiState.collectAsState()
     val background = MaterialTheme.colorScheme.background
@@ -158,6 +161,7 @@ fun GameScreen(
                 onToggleVibration = viewModel::toggleVibration,
                 onToggleSound = viewModel::toggleSound,
                 onOpenLevels = onOpenLevels,
+                onOpenHome = onOpenHome,
             )
 
             Crossfade(
@@ -207,6 +211,7 @@ private fun GameHud(
     onToggleVibration: () -> Unit,
     onToggleSound: () -> Unit,
     onOpenLevels: () -> Unit,
+    onOpenHome: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -218,6 +223,11 @@ private fun GameHud(
             text = "Nível $levelNumber",
             style = MaterialTheme.typography.titleLarge,
             color = Color.White,
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onOpenHome,
+            ),
         )
         Spacer(modifier = Modifier.weight(1f))
         IconButton(onClick = onToggleSound) {
