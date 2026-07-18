@@ -19,7 +19,7 @@ Toque num frasco para levantar a bolinha do topo (click + vibração sutil), dep
 - **Undo** e **reset** ilimitados, sem custo
 - **Toggles no HUD**: som e vibração, salvos entre sessões
 - **Tela de níveis**: progressão linear, concluídos com check, nível atual destacado
-- **Dificuldade**: 4→12 cores (+1 a cada 3 níveis), capacidade 4→6 a partir do 21, sempre 2 tubos vazios
+- **Dificuldade**: 4→12 cores (+1 a cada 6 níveis), mistura progressiva (bolinhas nascem mais agrupadas no começo), capacidade 4→6 a partir do 21, sempre 2 tubos vazios
 
 ## Stack
 

@@ -24,11 +24,12 @@ class LevelGeneratorTest {
             assertEquals(2, emptyTubes)
             assertEquals(4, tubeCapacity)
         }
-        with(LevelGenerator.paramsFor(15, rng)) {
-            assertEquals(9, colorCount)
+        with(LevelGenerator.paramsFor(16, rng)) {
+            assertEquals(6, colorCount)
             assertEquals(2, emptyTubes)
         }
         with(LevelGenerator.paramsFor(30, rng)) {
+            assertEquals(9, colorCount)
             assertEquals(2, emptyTubes)
             assertTrue(tubeCapacity in 4..5)
         }
@@ -37,6 +38,13 @@ class LevelGeneratorTest {
             assertEquals(2, emptyTubes)
             assertTrue(tubeCapacity in 5..6)
         }
+        // Viés de agrupamento cai com o nível até a mistura virar total.
+        val bias1 = LevelGenerator.paramsFor(1, rng).runBias
+        val bias20 = LevelGenerator.paramsFor(20, rng).runBias
+        val bias40 = LevelGenerator.paramsFor(40, rng).runBias
+        assertTrue(bias1 > bias20)
+        assertTrue(bias20 > bias40)
+        assertEquals(0.0, bias40, 1e-9)
     }
 
     @Test
@@ -79,16 +87,17 @@ class LevelGeneratorTest {
     }
 
     @Test
-    fun `boards are well mixed`() {
+    fun `boards respect the per-level mixing floor`() {
         for (levelNumber in 1..60) {
             val level = LevelGenerator.generate(levelNumber)
+            val floor = LevelGenerator.paramsFor(levelNumber, Random(0)).minTransitionRatio
             val transitions = level.tubes.sumOf { tube ->
                 tube.balls.zipWithNext().count { (a, b) -> a.colorId != b.colorId }
             }
             val maxTransitions = level.tubes.sumOf { (it.balls.size - 1).coerceAtLeast(0) }
             assertTrue(
                 "level $levelNumber: mix ratio ${transitions.toDouble() / maxTransitions}",
-                transitions >= maxTransitions * 0.6
+                transitions >= maxTransitions * floor
             )
         }
     }
