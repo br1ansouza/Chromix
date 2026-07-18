@@ -143,11 +143,11 @@ fun GameBoard(
             modifier = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { boardOrigin = it.positionInRoot() },
-            // Sem headroom no layout, centralizar distribui as sobras de forma
-            // simétrica; o espaçamento entre fileiras dá lugar pro lift.
+            // Fileiras ancoradas no topo, gap enxuto (a bolinha levantada pode
+            // sobrepor de leve a fileira de cima — passageiro e sem clip).
             verticalArrangement = Arrangement.spacedBy(
-                ballSizeDp * 0.8f,
-                Alignment.CenterVertically,
+                ballSizeDp * 0.5f,
+                Alignment.Top,
             ),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
