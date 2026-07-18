@@ -66,6 +66,7 @@ import com.br1ansouza.chromix.domain.GameState
 import com.br1ansouza.chromix.ui.haptics.GameHaptics
 import com.br1ansouza.chromix.ui.sound.GameSounds
 import com.br1ansouza.chromix.viewmodel.GameViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -106,11 +107,26 @@ fun GameScreen(
                 }
                 is GameViewModel.GameEvent.ValidMove -> if (vibrate) haptics.validMove()
                 is GameViewModel.GameEvent.TubeCompleted -> if (vibrate) haptics.tubeCompleted()
-                is GameViewModel.GameEvent.LevelWon -> {
-                    if (vibrate) haptics.levelWon()
-                    if (sound) sounds.levelWon()
-                }
+                // LevelWon: feedback disparado junto com o overlay (com delay
+                // pra animação de voo/pulso terminar), não aqui.
+                is GameViewModel.GameEvent.LevelWon -> Unit
             }
+        }
+    }
+
+    // Overlay de vitória espera o voo do último grupo e o pulso do tubo
+    // terminarem antes de aparecer; som e vibração tocam junto com ele.
+    var showWinOverlay by remember { mutableStateOf(false) }
+    LaunchedEffect(state.gameState, state.levelNumber) {
+        if (state.gameState == GameState.WON) {
+            val flightMs = state.lastMove
+                ?.let { 220L + (it.count - 1) * 90L } ?: 0L
+            delay(flightMs + 650L)
+            showWinOverlay = true
+            if (viewModel.uiState.value?.soundEnabled == true) sounds.levelWon()
+            if (viewModel.uiState.value?.vibrationEnabled == true) haptics.levelWon()
+        } else {
+            showWinOverlay = false
         }
     }
 
@@ -171,7 +187,7 @@ fun GameScreen(
         }
 
         WinOverlay(
-            visible = state.gameState == GameState.WON,
+            visible = showWinOverlay,
             levelNumber = state.levelNumber,
             moveCount = state.moveCount,
             onNextLevel = viewModel::nextLevel,
@@ -274,9 +290,16 @@ private fun WinOverlay(
                 listOf(
                     "Bah, tri massa!",
                     "Tchê, mandou bem!",
-                    "Mas que capaz!",
-                    "Baita capricho!",
-                    "Tri bem!",
+                    "Barbaridade!",
+                    "Afudê!",
+                    "Tri legal!",
+                    "Baita jogada!",
+                    "Bah tchê, que jogo!",
+                    "Aí sim, tchê!",
+                    "Bagual demais!",
+                    "Caíram os butiá do bolso!",
+                    "Tu é tri!",
+                    "Mandou ver, vivente!",
                 )
             }
             Column(
