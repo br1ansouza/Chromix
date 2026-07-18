@@ -66,7 +66,8 @@ private data class BoardMetrics(
     val liftedCenter: Offset get() = Offset(tubeWidth / 2f, -ballSize * 0.55f)
 }
 
-private const val MAX_TUBES_PER_ROW = 6
+private const val MAX_ROWS = 3
+private val MAX_BALL_SIZE = 72.dp
 private const val FLIGHT_SEGMENT_MS = 220
 private const val FLIGHT_STAGGER_MS = 90
 
@@ -79,15 +80,25 @@ fun GameBoard(
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val tubeCount = state.tubes.size
-        val rows = ceil(tubeCount / MAX_TUBES_PER_ROW.toFloat()).toInt()
-        val perRow = ceil(tubeCount / rows.toFloat()).toInt()
         val capacity = state.tubeCapacity
 
-        // Ocupa o máximo da tela: teto alto e margens mínimas (sobrava muita
-        // borda em telas grandes). A folga de altura cobre lift + espaçamento.
-        val widthBased = (maxWidth / perRow) - 18.dp
-        val heightBased = (maxHeight / rows - 48.dp) / capacity
-        val ballSizeDp: Dp = minOf(72.dp, widthBased, heightBased)
+        // Escolhe o número de fileiras que maximiza o tamanho da bolinha
+        // (6 tubos numa fileira só desperdiçava a tela: 2x3 rende bolinhas
+        // muito maiores). Empate favorece menos fileiras.
+        var rows = 1
+        var ballSizeDp: Dp = 0.dp
+        for (candidateRows in 1..MAX_ROWS) {
+            if (candidateRows > tubeCount) break
+            val candidatePerRow = ceil(tubeCount / candidateRows.toFloat()).toInt()
+            val widthBased = (maxWidth / candidatePerRow) - 18.dp
+            val heightBased = (maxHeight / candidateRows - 48.dp) / capacity
+            val candidateBall = minOf(MAX_BALL_SIZE, widthBased, heightBased)
+            if (candidateBall > ballSizeDp) {
+                ballSizeDp = candidateBall
+                rows = candidateRows
+            }
+        }
+        val perRow = ceil(tubeCount / rows.toFloat()).toInt()
 
         val density = LocalDensity.current
         val metrics = with(density) {
@@ -143,11 +154,12 @@ fun GameBoard(
             modifier = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { boardOrigin = it.positionInRoot() },
-            // Fileiras ancoradas no topo, gap enxuto (a bolinha levantada pode
-            // sobrepor de leve a fileira de cima — passageiro e sem clip).
+            // Centralizado: com as fileiras dimensionadas pra ocupar a tela,
+            // a sobra é pequena e fica simétrica. Gap abriga o lift (a bolinha
+            // levantada pode sobrepor de leve a fileira de cima, sem clip).
             verticalArrangement = Arrangement.spacedBy(
                 ballSizeDp * 0.5f,
-                Alignment.Top,
+                Alignment.CenterVertically,
             ),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
