@@ -43,6 +43,17 @@ class GameRulesTest {
     }
 
     @Test
+    fun `complete tube is locked as source`() {
+        assertFalse(GameRules.canMove(tube(0, 1, 1, 1, 1), tube(1)))
+        assertNull(GameRules.applyGroupMove(listOf(tube(0, 1, 1, 1, 1), tube(1)), Move(0, 1)))
+    }
+
+    @Test
+    fun `full but mixed tube is not locked`() {
+        assertTrue(GameRules.canMove(tube(0, 1, 1, 1, 2), tube(1)))
+    }
+
+    @Test
     fun `applyMove moves top ball between tubes`() {
         val tubes = listOf(tube(0, 1, 2), tube(1, 2))
         val result = GameRules.applyMove(tubes, Move(0, 1))

@@ -10,6 +10,8 @@ object GameRules {
 
     fun canMove(from: Tube, to: Tube): Boolean {
         if (from.id == to.id) return false
+        // Tubo resolvido fica travado: desmontá-lo nunca ajuda.
+        if (from.isComplete) return false
         val ball = from.topBall ?: return false
         if (to.isFull) return false
         val target = to.topBall ?: return true
