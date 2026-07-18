@@ -3,6 +3,9 @@ package com.br1ansouza.chromix
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
@@ -23,6 +26,16 @@ import com.br1ansouza.chromix.viewmodel.GameViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Imersivo: barra de navegação escondida; swipe da borda revela as
+        // barras em modo transiente (somem sozinhas em poucos segundos).
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.navigationBars())
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+
         setContent {
             ChromixTheme {
                 // ViewModel no escopo da Activity, compartilhado pelas duas telas.
