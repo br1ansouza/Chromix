@@ -142,7 +142,9 @@ fun GameBoard(
             modifier = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { boardOrigin = it.positionInRoot() },
-            verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
+            // Alinhado ao topo: centralizar deixava faixa vazia entre o HUD e
+            // a primeira fileira (o headroom do lift já dá o respiro de cima).
+            verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Top),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             state.tubes.chunked(perRow).forEach { rowTubes ->
