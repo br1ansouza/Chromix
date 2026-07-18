@@ -13,6 +13,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +72,7 @@ import com.br1ansouza.chromix.ui.sound.GameSounds
 import com.br1ansouza.chromix.viewmodel.GameViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun GameScreen(
@@ -110,6 +113,7 @@ fun GameScreen(
                 }
                 is GameViewModel.GameEvent.ValidMove -> if (vibrate) haptics.validMove()
                 is GameViewModel.GameEvent.TubeCompleted -> if (vibrate) haptics.tubeCompleted()
+                is GameViewModel.GameEvent.ExtraTubeAdded -> if (vibrate) haptics.tubeCompleted()
                 // LevelWon: feedback disparado junto com o overlay (com delay
                 // pra animação de voo/pulso terminar), não aqui.
                 is GameViewModel.GameEvent.LevelWon -> Unit
@@ -159,6 +163,7 @@ fun GameScreen(
                 onUndo = viewModel::undo,
                 onReset = animatedReset,
                 onToggleVibration = viewModel::toggleVibration,
+                onAddExtraTube = viewModel::addExtraTube,
                 onToggleSound = viewModel::toggleSound,
                 onOpenLevels = onOpenLevels,
                 onOpenHome = onOpenHome,
@@ -237,6 +242,7 @@ private fun GameHud(
     onUndo: () -> Unit,
     onReset: () -> Unit,
     onToggleVibration: () -> Unit,
+    onAddExtraTube: () -> Unit,
     onToggleSound: () -> Unit,
     onOpenLevels: () -> Unit,
     onOpenHome: () -> Unit,
@@ -269,7 +275,28 @@ private fun GameHud(
                 tint = if (soundEnabled) Color.White else Color.White.copy(alpha = 0.3f),
             )
         }
-        IconButton(onClick = onToggleVibration) {
+        // Toque = toggle de vibração; segurar 3s = tubo extra (válvula de
+        // escape, 1 por fase). Box no lugar de IconButton pra controlar a
+        // duração do press na mão.
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .pointerInput(Unit) {
+                    var longPressFired = false
+                    detectTapGestures(
+                        onPress = {
+                            longPressFired = false
+                            val released = withTimeoutOrNull(3_000L) { tryAwaitRelease() }
+                            if (released == null) {
+                                longPressFired = true
+                                onAddExtraTube()
+                            }
+                        },
+                        onTap = { if (!longPressFired) onToggleVibration() },
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(
                 imageVector = Icons.Filled.Vibration,
                 contentDescription = if (vibrationEnabled) {

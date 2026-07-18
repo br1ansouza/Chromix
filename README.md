@@ -17,6 +17,7 @@ APK pronto na página de [**Releases**](https://github.com/br1ansouza/Chromix/re
 Toque num frasco para levantar a bolinha do topo (click + vibração sutil), depois toque no destino. O movimento vale se o destino estiver vazio ou com bolinha da mesma cor no topo (e não estiver cheio) — a bolinha voa em arco até o lugar. Movimento inválido dá shake no frasco; frasco completo fica travado. Se o tabuleiro ficar sem saída, o jogo avisa pra desfazer ou reiniciar. Vença quando todo frasco estiver vazio ou completo com uma cor só: "Bah, tri massa!".
 
 - **Undo** e **reset** ilimitados, sem custo
+- **Tubo extra de emergência**: segure o botão de vibração por 3 segundos (1 por fase)
 - **Toggles no HUD**: som e vibração, salvos entre sessões
 - **Tela de níveis**: progressão linear, concluídos com check, nível atual destacado
 - **Dificuldade**: 4→12 cores (+1 a cada 6 níveis), mistura progressiva (bolinhas nascem mais agrupadas no começo), capacidade 4→6 a partir do 21, sempre 2 tubos vazios
