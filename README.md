@@ -2,6 +2,10 @@
 
 Jogo de puzzle **Ball Sort** para Android com identidade gaúcha: organize bolinhas coloridas em frascos até cada frasco conter uma única cor.
 
+## Download
+
+APK pronto na página de [**Releases**](https://github.com/br1ansouza/Chromix/releases) — baixe o `.apk` da versão mais recente e instale no Android 7.0+ (permita "fontes desconhecidas").
+
 - 100% offline, sem anúncios, sem contas, sem música de fundo
 - Fases infinitas geradas proceduralmente, sempre solucionáveis, com dificuldade crescente
 - Paleta "pôr-do-sol no pampa", detalhes do RS (bandeira, exclamações tchê)
