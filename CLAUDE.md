@@ -17,9 +17,9 @@ Jogo Android nativo de puzzle "Ball Sort": mover bolinhas coloridas entre frasco
 
 ## Regras de produto (resumo da especificação)
 
-- **Mecânica**: mover bolinha do topo de um frasco para outro apenas se o destino estiver vazio ou tiver bolinha do topo da mesma cor, e não estiver cheio. Vitória quando todo frasco está vazio ou cheio de uma cor só.
-- **Fases infinitas**: geração procedural reversa (embaralhar a partir do estado resolvido com movimentos válidos) — solucionável por construção. Determinística: `Random(seed = levelNumber)`.
-- **Curva de dificuldade**: `colorCount = min(4 + levelNumber/3, 12)`; `emptyTubes = 2` (< nível 15) senão `1`; capacidade 4, podendo variar 4–6 em níveis altos; `shuffleMoves = 40 + levelNumber * 3` (teto 300). Evitar fases triviais.
+- **Mecânica**: mover bolinha do topo de um frasco para outro apenas se o destino estiver vazio ou tiver bolinha do topo da mesma cor, e não estiver cheio. Frasco completo (cheio de uma cor só) fica travado — não pode mais ser origem. Vitória quando todo frasco está vazio ou cheio de uma cor só.
+- **Fases infinitas**: distribuição totalmente aleatória das bolinhas, validada pelo solver de domínio (`Solver.kt`, mesma semântica de movimento em grupo do jogador); tabuleiro insolúvel ou trivial é rejeitado e regenerado. Determinística: `Random(levelNumber * 1000 + attempt)`. Beco sem saída em jogo dispara aviso no HUD (undo/reset).
+- **Curva de dificuldade**: `colorCount = min(4 + levelNumber/3, 12)`; `emptyTubes = 2` sempre (1 vazio + tabuleiro misturado = quase sempre impossível, medido); capacidade 4 (<21), 4–5 (<41), 5–6 (41+). Anti-trivialidade: sem tubo pré-completo, sem fundo monocromático de 3+, transições de cor ≥ 60% do máximo.
 - **Telas**: três — inicial (logo + Iniciar), jogo e seleção de níveis (grid sob demanda, progressão linear). Sem tela de configurações: toggles de som e vibração no HUD.
 - **UX**: animação de voo em arco (~200–280ms, FastOutSlowInEasing), shake em movimento inválido, pulso em tubo completo, overlay de vitória com avanço automático, transições ~200ms. Geração de fase < 50ms, sem loading.
 - **Haptics**: válido 10–15ms, inválido 30ms, tubo completo 40ms, vitória waveform duplo. Respeitar toggle salvo.
