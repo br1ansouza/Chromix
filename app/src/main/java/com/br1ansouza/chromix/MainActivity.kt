@@ -66,6 +66,9 @@ class MainActivity : ComponentActivity() {
                         GameScreen(
                             viewModel = gameViewModel,
                             onOpenLevels = { navController.navigate("levels") },
+                            onOpenHome = {
+                                navController.popBackStack("home", inclusive = false)
+                            },
                         )
                     }
                     composable("levels") {
