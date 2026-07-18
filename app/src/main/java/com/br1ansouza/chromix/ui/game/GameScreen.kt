@@ -174,7 +174,7 @@ fun GameScreen(
                         shakeTrigger = shakeTrigger,
                         onTubeTap = viewModel::onTubeTap,
                         modifier = Modifier
-                            .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                            .padding(start = 8.dp, end = 8.dp, top = 16.dp, bottom = 8.dp)
                             .graphicsLayer {
                                 alpha = boardVisibility.value
                                 val scale = 0.94f + 0.06f * boardVisibility.value
