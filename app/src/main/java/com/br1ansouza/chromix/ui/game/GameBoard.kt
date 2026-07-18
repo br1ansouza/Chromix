@@ -44,24 +44,26 @@ import com.br1ansouza.chromix.viewmodel.GameViewModel
 import kotlin.math.ceil
 import kotlin.math.min
 
-/** Medidas do tabuleiro em px, compartilhadas entre tubos e o overlay de voo. */
+/**
+ * Medidas do tabuleiro em px, compartilhadas entre tubos e o overlay de voo.
+ * O composable do tubo tem exatamente a altura do vidro: a bolinha levantada é
+ * desenhada ACIMA dos limites (nada na hierarquia clipa), então não se reserva
+ * headroom no layout — era isso que deixava faixas vazias sobre cada fileira.
+ */
 private data class BoardMetrics(
     val ballSize: Float,
     val tubeWidth: Float,
     val tubeHeight: Float,
-    val headroom: Float,
     val bottomPad: Float,
 ) {
-    val tubeTotalHeight: Float get() = headroom + tubeHeight
-
     /** Centro da bolinha [index] (0 = fundo) relativo à origem do composable do tubo. */
     fun ballCenter(index: Int): Offset = Offset(
         x = tubeWidth / 2f,
-        y = tubeTotalHeight - bottomPad - ballSize / 2f - index * ballSize,
+        y = tubeHeight - bottomPad - ballSize / 2f - index * ballSize,
     )
 
-    /** Posição da bolinha "levantada" acima da boca do tubo. */
-    val liftedCenter: Offset get() = Offset(tubeWidth / 2f, headroom * 0.5f)
+    /** Posição da bolinha "levantada", acima da boca do tubo (y negativo). */
+    val liftedCenter: Offset get() = Offset(tubeWidth / 2f, -ballSize * 0.55f)
 }
 
 private const val MAX_TUBES_PER_ROW = 6
@@ -82,9 +84,9 @@ fun GameBoard(
         val capacity = state.tubeCapacity
 
         // Ocupa o máximo da tela: teto alto e margens mínimas (sobrava muita
-        // borda em telas grandes).
+        // borda em telas grandes). A folga de altura cobre lift + espaçamento.
         val widthBased = (maxWidth / perRow) - 18.dp
-        val heightBased = (maxHeight / rows - 32.dp) / (capacity + 1)
+        val heightBased = (maxHeight / rows - 48.dp) / capacity
         val ballSizeDp: Dp = minOf(72.dp, widthBased, heightBased)
 
         val density = LocalDensity.current
@@ -94,12 +96,11 @@ fun GameBoard(
                 ballSize = ball,
                 tubeWidth = ball + 10.dp.toPx(),
                 tubeHeight = ball * capacity + 12.dp.toPx(),
-                headroom = ball + 10.dp.toPx(),
                 bottomPad = 6.dp.toPx(),
             )
         }
         val tubeWidthDp = with(density) { metrics.tubeWidth.toDp() }
-        val tubeTotalHeightDp = with(density) { metrics.tubeTotalHeight.toDp() }
+        val tubeHeightDp = with(density) { metrics.tubeHeight.toDp() }
 
         val tubePositions = remember { mutableStateMapOf<Int, Offset>() }
         var boardOrigin by remember { mutableStateOf(Offset.Zero) }
@@ -142,9 +143,12 @@ fun GameBoard(
             modifier = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { boardOrigin = it.positionInRoot() },
-            // Alinhado ao topo: centralizar deixava faixa vazia entre o HUD e
-            // a primeira fileira (o headroom do lift já dá o respiro de cima).
-            verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Top),
+            // Sem headroom no layout, centralizar distribui as sobras de forma
+            // simétrica; o espaçamento entre fileiras dá lugar pro lift.
+            verticalArrangement = Arrangement.spacedBy(
+                ballSizeDp * 0.8f,
+                Alignment.CenterVertically,
+            ),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             state.tubes.chunked(perRow).forEach { rowTubes ->
@@ -154,7 +158,7 @@ fun GameBoard(
                             tube = tube,
                             metrics = metrics,
                             widthDp = tubeWidthDp,
-                            heightDp = tubeTotalHeightDp,
+                            heightDp = tubeHeightDp,
                             isSelected = state.selectedTubeId == tube.id,
                             isFlightSource = pendingMove?.move?.fromTubeId == tube.id,
                             hiddenFromIndex = if (tube.id == hiddenTubeId) hiddenFromIndex else null,
@@ -274,7 +278,7 @@ private fun TubeView(
             val ballRadius = metrics.ballSize / 2f * 0.92f
 
             // Corpo do tubo: fundo levemente visível + contorno com boca aberta.
-            val tubeTop = metrics.headroom
+            val tubeTop = 0f
             val outline = if (isSelected || tube.isComplete) {
                 Color.White.copy(alpha = 0.75f)
             } else {
