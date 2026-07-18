@@ -41,6 +41,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val soundEnabled: Boolean = true,
         /** Beco sem saída: nenhum movimento útil restante — só undo/reset salvam. */
         val noMovesLeft: Boolean = false,
+        /** Válvula de escape já usada nesta fase (tubo extra, 1 por fase). */
+        val extraTubeAdded: Boolean = false,
     )
 
     sealed interface GameEvent {
@@ -50,6 +52,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         data class InvalidMove(val tubeId: Int) : GameEvent
         data class TubeCompleted(val tubeId: Int) : GameEvent
         data object LevelWon : GameEvent
+        data object ExtraTubeAdded : GameEvent
     }
 
     private val prefs = GamePreferences(application)
@@ -158,6 +161,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             !from.isEmpty && !from.isComplete &&
                 tubes.any { to -> GameRules.canMove(from, to) }
         }
+
+    /**
+     * Válvula de escape (long-press no botão de vibração): adiciona um tubo
+     * vazio extra, uma vez por fase. Não entra na pilha de undo — desfazer além
+     * do ponto da adição remove o tubo junto com o estado antigo, o que é
+     * consistente (o estado restaurado nunca teve o tubo).
+     */
+    fun addExtraTube() {
+        val state = _uiState.value ?: return
+        if (state.gameState == GameState.WON || state.extraTubeAdded) return
+        val extra = Tube(id = state.tubes.maxOf { it.id } + 1, capacity = state.tubeCapacity)
+        _uiState.value = state.copy(
+            tubes = state.tubes + extra,
+            extraTubeAdded = true,
+            noMovesLeft = false,
+        )
+        _events.tryEmit(GameEvent.ExtraTubeAdded)
+    }
 
     fun toggleVibration() {
         val state = _uiState.value ?: return
