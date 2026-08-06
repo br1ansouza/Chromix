@@ -1,10 +1,35 @@
+<div align="center">
+
 # Chromix
 
-Jogo de puzzle **Ball Sort** para Android com identidade gaúcha: organize bolinhas coloridas em frascos até cada frasco conter uma única cor.
+**Puzzle Ball Sort para Android, com identidade gaúcha.**
+
+Organize bolinhas coloridas em frascos até cada frasco conter uma única cor.
+Fases infinitas geradas na hora, todas validadas por um solver antes de chegar em você.
+
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-UI-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)](https://www.android.com)
+[![Download](https://img.shields.io/github/v/release/br1ansouza/Chromix?label=download&color=2FB8AC)](https://github.com/br1ansouza/Chromix/releases)
+
+<img src="docs/demo.gif" width="260" alt="Gameplay do Chromix" />
+
+</div>
+
+## Telas
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/home.jpg" width="200" alt="Tela inicial" /><br /><sub><b>Início</b><br />Logo e nível atual</sub></td>
+    <td align="center"><img src="docs/niveis.jpg" width="200" alt="Seleção de níveis" /><br /><sub><b>Níveis</b><br />Progressão linear, sem limite</sub></td>
+    <td align="center"><img src="docs/tabuleiro.jpg" width="200" alt="Tabuleiro no nível 49" /><br /><sub><b>Tabuleiro</b><br />12 cores, marcador por forma</sub></td>
+    <td align="center"><img src="docs/vitoria.jpg" width="200" alt="Tela de vitória" /><br /><sub><b>Vitória</b><br />Contagem de movimentos</sub></td>
+  </tr>
+</table>
 
 ## Download
 
-APK pronto na página de [**Releases**](https://github.com/br1ansouza/Chromix/releases) — baixe o `.apk` da versão mais recente e instale no Android 7.0+ (permita "fontes desconhecidas").
+APK pronto na página de [**Releases**](https://github.com/br1ansouza/Chromix/releases). Baixe o `.apk` da versão mais recente e instale no Android 7.0 ou superior (permita "fontes desconhecidas").
 
 - 100% offline, sem anúncios, sem contas, sem música de fundo
 - Fases infinitas geradas proceduralmente, sempre solucionáveis, com dificuldade crescente
@@ -14,13 +39,37 @@ APK pronto na página de [**Releases**](https://github.com/br1ansouza/Chromix/re
 
 ## Como jogar
 
-Toque num frasco para levantar a bolinha do topo (click + vibração sutil), depois toque no destino. O movimento vale se o destino estiver vazio ou com bolinha da mesma cor no topo (e não estiver cheio) — a bolinha voa em arco até o lugar. Movimento inválido dá shake no frasco; frasco completo fica travado. Se o tabuleiro ficar sem saída, o jogo avisa pra desfazer ou reiniciar. Vença quando todo frasco estiver vazio ou completo com uma cor só: "Bah, tri massa!".
+Toque num frasco para levantar a bolinha do topo (click + vibração sutil), depois toque no destino. O movimento vale se o destino estiver vazio ou com bolinha da mesma cor no topo (e não estiver cheio). A bolinha voa em arco até o lugar. Movimento inválido dá shake no frasco; frasco completo fica travado. Se o tabuleiro ficar sem saída, o jogo avisa pra desfazer ou reiniciar. Vença quando todo frasco estiver vazio ou completo com uma cor só: "Bah, tri massa!".
 
 - **Undo** e **reset** ilimitados, sem custo
 - **Tubo extra de emergência**: segure o botão de vibração por 3 segundos (1 por fase)
 - **Toggles no HUD**: som e vibração, salvos entre sessões
 - **Tela de níveis**: progressão linear, concluídos com check, nível atual destacado
 - **Dificuldade**: 4→12 cores (+1 a cada 6 níveis), mistura progressiva (bolinhas nascem mais agrupadas no começo), capacidade 4→6 a partir do 21, sempre 2 tubos vazios
+
+## O problema interessante: gerar fase que sempre tem solução
+
+Ball Sort é fácil de programar e difícil de gerar bem. A primeira versão usava a abordagem
+comum de embaralhar a partir do estado resolvido aplicando movimentos inversos. O resultado
+media mal: em níveis altos, 11 dos 12 tubos terminavam com fundo de cor única, então a fase
+parecia montada pela metade.
+
+A segunda tentativa foi preencher tudo aleatoriamente. Aí apareceu o problema oposto: com
+1 tubo vazio e o tabuleiro bem misturado, 30 de 30 tabuleiros gerados eram **impossíveis**.
+
+A versão atual junta as duas coisas com um verificador no meio:
+
+1. Distribui todas as bolinhas de forma aleatória, com semente determinística pelo número do nível.
+2. Roda o `Solver` (busca em profundidade iterativa, memoização por estado canônico, orçamento de 200 mil expansões).
+3. Rejeita e regenera se for insolúvel, ou se for trivial demais (fundo monocromático de 3 ou mais, poucas transições de cor).
+
+Um detalhe que passou despercebido por muito tempo: a solvabilidade era provada movendo
+**uma bolinha por vez**, mas o jogador move o **grupo inteiro** de cores iguais. Semânticas
+diferentes, garantia furada. Hoje o solver usa exatamente a mesma regra de movimento do jogo.
+
+Geração roda em `Dispatchers.Default`, com média de 9 ms e pior caso medido de 152 ms, então
+não existe tela de carregamento. Os testes unitários pegam a solução que o solver encontrou e
+reexecutam ela nas fases 1 a 60, garantindo que continuam vencíveis a cada mudança.
 
 ## Stack
 
@@ -52,7 +101,8 @@ app/src/main/java/com/br1ansouza/chromix/
 └── viewmodel/   # GameViewModel (estado, undo, eventos)
 ```
 
-O gerador distribui todas as bolinhas aleatoriamente e valida o tabuleiro com um solver que usa a mesma semântica de movimento do jogador — fases insolúveis ou fáceis demais (tubos meio prontos, pouca mistura) são rejeitadas e regeneradas, sempre de forma determinística pelo número do nível. Testes unitários reexecutam a solução encontrada pelo solver nas fases 1–60.
+O domínio (`domain/`) é Kotlin puro, sem dependência de Android, então roda direto na JVM
+nos testes. É onde vivem as regras de movimento, o gerador e o solver descritos acima.
 
 ## Build
 
