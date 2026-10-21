@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: cron
+      cronjob: "0 8 */2 * *"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      kotlin:
+        patterns: ["org.jetbrains.kotlin*"]
+        update-types: [minor, patch]
+      demais:
+        patterns: ["*"]
+        update-types: [minor, patch]
