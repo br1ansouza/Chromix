@@ -9,7 +9,7 @@ Jogo Android nativo de puzzle "Ball Sort": mover bolinhas coloridas entre frasco
   2. Commits pequenos e separados por mudança lógica dentro da feature.
   3. Ao finalizar a feature: abrir PR para a `dev` e fazer merge.
   4. `dev` → `main` só por PR de release, aberto manualmente quando fizer sentido.
-- **Dependabot**: atualiza dependências Gradle a cada dois dias às 08:00 (America/Sao_Paulo), sempre com PR para a `dev`.
+- **Dependabot**: atualiza dependências Gradle toda segunda às 08:00 (America/Sao_Paulo), sempre com PR para a `dev`.
 - **Commits**: Conventional Commits em minúsculas, em inglês.
   - Tipos usados: `feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `style:`, `refactor:`, `test:`.
   - Assunto ≤ 50 caracteres, imperativo. Corpo só quando o "porquê" não for óbvio.
